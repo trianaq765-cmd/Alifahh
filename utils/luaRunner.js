@@ -1,6 +1,6 @@
 /**
- * Meson Obfuscator v4.0 - Professional VM-Based Obfuscator
- * Luraph-style output with complex table structures
+ * Meson Obfuscator v4.1 - Luraph-Style Professional Output
+ * Complex function tables, method calls, minimal number arrays
  */
 
 class MesonObfuscator {
@@ -12,108 +12,50 @@ class MesonObfuscator {
         this.varCounter = 0;
         this.usedNames = new Set();
         this.stringKey = Math.floor(Math.random() * 200) + 50;
-        this.shortNames = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        this.usedShortNames = new Set();
     }
 
     // ==================== NAME GENERATION ====================
     
-    // Generate short names like Luraph (v, h, Q, x, r, S, m)
-    generateShortName() {
-        const available = [];
-        for (const c of this.shortNames) {
-            if (!this.usedShortNames.has(c)) {
-                available.push(c);
+    // Single letter names like Luraph
+    getSingleLetter() {
+        const letters = 'vhQxrSmfKOMUTRBCDEFGHIJLNPWYZabcdegijklnopqstuwyz';
+        for (const l of letters) {
+            if (!this.usedNames.has(l)) {
+                this.usedNames.add(l);
+                return l;
             }
         }
-        
-        if (available.length > 0) {
-            const name = available[Math.floor(Math.random() * available.length)];
-            this.usedShortNames.add(name);
-            return name;
-        }
-        
-        // Fallback to two-letter names
-        const c1 = this.shortNames[Math.floor(Math.random() * this.shortNames.length)];
-        const c2 = Math.floor(Math.random() * 10);
-        return c1 + c2;
+        return '_' + Math.random().toString(36).substr(2, 2);
     }
 
-    // Generate function names like w, e, f, Q2, R, R6, etc.
-    generateFuncName() {
+    // Function-style names: w, e, f, Q2, R6, etc.
+    getFuncName() {
         const styles = [
-            () => this.generateShortName(),
-            () => this.generateShortName() + Math.floor(Math.random() * 10),
-            () => this.generateShortName().toUpperCase() + Math.floor(Math.random() * 10),
-            () => '_' + this.generateShortName(),
+            () => this.getSingleLetter(),
+            () => this.getSingleLetter() + Math.floor(Math.random() * 10),
+            () => this.getSingleLetter().toUpperCase() + Math.floor(Math.random() * 10),
         ];
         return styles[Math.floor(Math.random() * styles.length)]();
     }
 
-    generateName(style = 'mixed') {
-        const styles = {
-            'Il1': () => {
-                let n = '';
-                for (let i = 0; i < 4 + Math.floor(Math.random() * 3); i++) {
-                    n += ['I', 'l', '1'][Math.floor(Math.random() * 3)];
-                }
-                return n;
-            },
-            'O0o': () => {
-                let n = '';
-                for (let i = 0; i < 4 + Math.floor(Math.random() * 3); i++) {
-                    n += ['O', 'o', '0'][Math.floor(Math.random() * 3)];
-                }
-                return n;
-            },
-            'hex': () => '_0x' + Math.random().toString(16).substr(2, 4),
-            'short': () => this.generateShortName(),
-            'func': () => this.generateFuncName(),
-            'mixed': () => {
-                const all = ['Il1', 'O0o', 'hex', 'short'];
-                return styles[all[Math.floor(Math.random() * all.length)]]();
-            }
-        };
-
-        let name;
-        let attempts = 0;
-        do {
-            name = styles[style] ? styles[style]() : styles['mixed']();
-            attempts++;
-        } while (this.usedNames.has(name) && attempts < 100);
-
-        this.usedNames.add(name);
-        return name;
+    generateName(style = 'single') {
+        if (style === 'single') return this.getSingleLetter();
+        if (style === 'func') return this.getFuncName();
+        return this.getSingleLetter();
     }
 
-    // Format numbers with various styles (hex, binary, decimal, with underscores)
-    formatNumber(num) {
-        if (num < 0) return `(-${this.formatNumber(-num)})`;
-        
+    // Format numbers with Luraph-style variations
+    formatNum(num) {
+        if (num < 0) return `(-${this.formatNum(-num)})`;
         const formats = [
-            // Hex variations
             () => `0x${num.toString(16).toUpperCase()}`,
             () => `0X${num.toString(16)}`,
-            () => `0x${num.toString(16)}`,
-            // Binary (for smaller numbers)
-            () => num < 512 ? `0b${num.toString(2)}` : num.toString(),
-            () => num < 512 ? `0B${num.toString(2).replace(/(.{4})(?=.)/g, '$1_')}` : num.toString(),
-            // Decimal with underscores
+            () => `0b${num.toString(2)}`,
+            () => `0B${num.toString(2).replace(/(.{4})(?=.)/g, '$1_')}`,
             () => num > 1000 ? num.toString().replace(/\B(?=(\d{2})+(?!\d))/g, '_') : num.toString(),
-            // Plain
-            () => num.toString()
+            () => num.toString(),
         ];
-        
         return formats[Math.floor(Math.random() * formats.length)]();
-    }
-
-    // Generate random constant array for fake data
-    generateConstArray(length = 9) {
-        const arr = [];
-        for (let i = 0; i < length; i++) {
-            arr.push(Math.floor(Math.random() * 4294967295));
-        }
-        return arr;
     }
 
     // ==================== MAIN ENTRY ====================
@@ -162,236 +104,240 @@ class MesonObfuscator {
         }
     }
 
-    // ==================== BASIC TIER ====================
+    // ==================== BASIC/STANDARD/ADVANCED TIERS ====================
 
     applyBasicObfuscation(code) {
         code = this.removeComments(code);
         code = this.encryptStrings(code);
         code = this.minify(code);
-        return `--[[ Meson Obfuscator v4.0 ]]\n` + code;
+        return `--[[ Meson v4.1 ]]\n` + code;
     }
-
-    // ==================== STANDARD TIER ====================
 
     applyStandardObfuscation(code) {
         code = this.removeComments(code);
         code = this.encryptStrings(code);
         code = this.encodeNumbers(code);
         code = this.renameVariables(code);
-        code = this.addDeadCode(code);
         code = this.minify(code);
-        return `--[[ Meson Obfuscator v4.0 ]]\n` + code;
+        return `--[[ Meson v4.1 ]]\n` + code;
     }
-
-    // ==================== ADVANCED TIER ====================
 
     applyAdvancedObfuscation(code) {
         code = this.removeComments(code);
-        code = this.addDeadCode(code);
-        code = this.encryptStringsAdvanced(code);
+        code = this.encryptStrings(code);
         code = this.encodeNumbers(code);
-        code = this.addOpaquePredicates(code);
         code = this.renameVariables(code);
         code = this.wrapControlFlow(code);
         code = this.minify(code);
-        return `--[[ Meson Obfuscator v4.0 ]]\n` + code;
+        return `--[[ Meson v4.1 ]]\n` + code;
     }
 
-    // ==================== VM TIER (PROFESSIONAL - LURAPH STYLE) ====================
+    // ==================== VM TIER - LURAPH STYLE ====================
 
     applyVMObfuscation(sourceCode) {
-        const preparedCode = this.removeComments(sourceCode);
-        return this.generateProfessionalVM(preparedCode);
+        this.reset();
+        return this.generateLuraphStyleVM(sourceCode);
     }
 
-    generateProfessionalVM(sourceCode) {
-        // Reset short names for clean generation
-        this.usedShortNames = new Set();
-        
-        // Generate main function/variable names (Luraph style)
-        const funcs = {};
-        const funcNames = ['w', 'e', 'f', 'Q', 'R', 'N', 'I', 'X', 'n', 'd', 'u', 'G', 'a', 'V', 'U', 'S', 'P', 'L', 'z', 'l', 'g', 'D', 'K', 'M', 'T', 'B', 'C', 'H', 'J', 'Y', 'Z'];
-        
-        // Shuffle and pick unique names
-        const shuffled = funcNames.sort(() => Math.random() - 0.5);
-        const names = {
-            main: shuffled[0],
-            decode: shuffled[1],
-            execute: shuffled[2],
-            wrap: shuffled[3],
-            check: shuffled[4],
-            init: shuffled[5],
-            run: shuffled[6],
-            data: shuffled[7],
-            key: shuffled[8],
-            const: shuffled[9],
-            env: shuffled[10] || 'E',
-            bxor: shuffled[11] || 'X',
-            load: shuffled[12] || 'L',
-            err: shuffled[13] || 'r',
-            result: shuffled[14] || 's',
-            chunk: shuffled[15] || 'c',
-            tbl: shuffled[16] || 't',
-            idx: shuffled[17] || 'i',
-            val: shuffled[18] || 'v',
-            str: shuffled[19] || 'S',
-            num: shuffled[20] || 'n',
+    generateLuraphStyleVM(sourceCode) {
+        // Generate all function/variable names first
+        const n = {
+            // Main structure names
+            w: this.getFuncName(), e: this.getFuncName(), f: this.getFuncName(),
+            Q: this.getFuncName(), R: this.getFuncName(), N: this.getFuncName(),
+            I: this.getFuncName(), X: this.getFuncName(), n: this.getFuncName(),
+            d: this.getFuncName(), u: this.getFuncName(), G: this.getFuncName(),
+            a: this.getFuncName(), V: this.getFuncName(), U: this.getFuncName(),
+            S: this.getFuncName(), P: this.getFuncName(), L: this.getFuncName(),
+            z: this.getFuncName(), l: this.getFuncName(), g: this.getFuncName(),
+            D: this.getFuncName(), K: this.getFuncName(), M: this.getFuncName(),
+            T: this.getFuncName(), B: this.getFuncName(), C: this.getFuncName(),
+            H: this.getFuncName(), J: this.getFuncName(), Y: this.getFuncName(),
+            Z: this.getFuncName(), W: this.getFuncName(), O: this.getFuncName(),
+            // Parameter names
+            v: 'v', h: 'h', x: 'x', r: 'r', s: 's', m: 'm',
+            o: 'o', p: 'p', c: 'c', k: 'k', t: 't', i: 'i',
         };
 
-        // Add number suffixes to some names
-        for (const key of Object.keys(names)) {
-            if (Math.random() > 0.6) {
-                names[key] = names[key] + Math.floor(Math.random() * 10);
-            }
-        }
-
         // Encryption key
-        const encKey = Math.floor(Math.random() * 200) + 50;
+        const key = Math.floor(Math.random() * 200) + 50;
         
-        // Generate fake constant array (like Luraph's e={...})
-        const fakeConsts = this.generateConstArray(9);
+        // Generate random constants array (like Luraph's e={...})
+        const constArr = Array(9).fill(0).map(() => Math.floor(Math.random() * 4294967295));
         
-        // Encrypt source code
-        const codeBytes = this.encryptStringToArray(sourceCode, encKey);
+        // Process and encrypt source code
+        const processedCode = this.removeComments(sourceCode);
         
-        // Generate obfuscated data representation (mix of formats)
-        const dataStr = this.generateMixedDataArray(codeBytes);
+        // Encode source as a more complex format (not just byte array)
+        const encodedData = this.encodeSourceComplex(processedCode, key, n);
         
-        // Generate fake functions that look complex
-        const fakeFuncs = this.generateFakeFunctions(names);
+        // Generate fake complex functions
+        const fakeFuncs = this.generateComplexFunctions(n, key);
         
-        // Build the professional output
-        const output = this.buildProfessionalOutput(names, encKey, fakeConsts, dataStr, fakeFuncs);
+        // Generate the real decoder/executor
+        const realFuncs = this.generateRealFunctions(n, key);
+        
+        // Build final output
+        return this.buildLuraphOutput(n, key, constArr, encodedData, fakeFuncs, realFuncs);
+    }
+
+    encodeSourceComplex(source, key, n) {
+        // Split source into chunks and encode differently
+        const chunks = [];
+        const chunkSize = 50 + Math.floor(Math.random() * 50);
+        
+        for (let i = 0; i < source.length; i += chunkSize) {
+            const chunk = source.substr(i, chunkSize);
+            const encoded = [];
+            for (let j = 0; j < chunk.length; j++) {
+                encoded.push(chunk.charCodeAt(j) ^ key);
+            }
+            chunks.push(encoded);
+        }
+        
+        return chunks;
+    }
+
+    generateComplexFunctions(n, key) {
+        const funcs = [];
+        
+        // Function 1: Looks like a decoder with method calls
+        funcs.push(`${n.w}=function(${n.v},${n.h},${n.Q},${n.x})` +
+            `(${n.Q})[${this.formatNum(10)}]=${n.v}.${n.D};` +
+            `if not ${n.x}[${this.formatNum(30368)}] then ` +
+            `${n.h}=${n.v}:${n.l}(${n.x},${n.h});` +
+            `else ${n.h}=${n.v}:${n.z}(${n.x},${n.h});end;` +
+            `return ${n.h};end`);
+        
+        // Function 2: Simple return
+        funcs.push(`${n.f}=function(${n.v},${n.v},${n.h})` +
+            `${n.h}=${n.v}[${this.formatNum(29370)}];return ${n.h};end`);
+        
+        // Function 3: Assignment with return
+        funcs.push(`${n.Q}2=function(${n.v},${n.v},${n.h},${n.Q})` +
+            `${n.h}=(${this.formatNum(30)});` +
+            `${n.v}[${this.formatNum(33)}]=${n.Q};return ${n.h};end`);
+        
+        // Function 4: Complex math
+        funcs.push(`${n.R}=function(${n.v},${n.h},${n.Q})` +
+            `${n.h}=${this.formatNum(-3411915264)}+((${n.v}.${n.P}2((${n.v}.${n.L}2(${n.v}.${n.e}[${this.formatNum(2)}],` +
+            `${n.v}.${n.e}[${this.formatNum(6)}]))+${n.Q}[${this.formatNum(31479)}]))+${n.v}.${n.e}[${this.formatNum(8)}]);` +
+            `${n.Q}[${this.formatNum(23813)}]=(${n.h});return ${n.h};end`);
+        
+        // Function 5: Table getter
+        funcs.push(`${n.R}6=function(${n.v},${n.v},${n.h})` +
+            `${n.h}=${n.v}[${this.formatNum(40)}]();return ${n.h};end`);
+        
+        // Function 6: Property getter
+        funcs.push(`${n.N}=function(${n.v},${n.v},${n.h})` +
+            `${n.h}=${n.v}[${this.formatNum(23813)}];return ${n.h};end`);
+        
+        // Function 7: Loop function
+        funcs.push(`${n.J}6=function(${n.v},${n.h})` +
+            `local ${n.Q},${n.x}=(${this.formatNum(15)});` +
+            `repeat ${n.x},${n.Q}=${n.v}:${n.a}6(${n.h},${n.Q});` +
+            `if ${n.x}==${this.formatNum(49299)} then break;` +
+            `else if ${n.x}==-1 then return-1;end;end;until false;return nil;end`);
+        
+        // Function 8: Another getter
+        funcs.push(`${n.n}6=function(${n.v},${n.v},${n.h})` +
+            `${n.v}=${n.h}[${this.formatNum(23)}]();return ${n.v};end`);
+        
+        // Function 9: Complex conditional
+        funcs.push(`${n.I}=function(${n.v},${n.h},${n.Q},${n.x})` +
+            `local ${n.r};if ${n.x}<=${this.formatNum(70)} then ` +
+            `if not(${n.x}>${this.formatNum(39)})then ${n.x}=${n.v}:${n.d}(${n.x},${n.h},${n.Q});` +
+            `else if not(${n.x}<=${this.formatNum(67)})then ${n.x}=${n.v}:${n.P}(${n.h},${n.Q},${n.x});` +
+            `return ${this.formatNum(36571)},${n.x};else(${n.h})[${this.formatNum(3)}]=${n.v}.${n.i};` +
+            `if not(not ${n.Q}[${this.formatNum(7146)}])then ${n.x}=${n.Q}[${this.formatNum(7146)}];` +
+            `else ${n.x}=${this.formatNum(-3272562488)}+((${n.v}.${n.L}2(${n.v}.${n.e}[${this.formatNum(9)}]>=${n.v}.${n.e}[${this.formatNum(4)}] ` +
+            `and ${n.v}.${n.e}[${this.formatNum(9)}] or ${n.x}))-${n.v}.${n.e}[${this.formatNum(1)}]<=${n.v}.${n.e}[${this.formatNum(5)}] ` +
+            `and ${n.v}.${n.e}[${this.formatNum(7)}] or ${n.Q}[${this.formatNum(31479)}]);` +
+            `(${n.Q})[${this.formatNum(7146)}]=${n.x};end;end;end;` +
+            `elseif ${n.x}<=${this.formatNum(104)} then if ${n.x}==${this.formatNum(90)} then ` +
+            `${n.v}:${n.L}(${n.h});return ${this.formatNum(30334)},${n.x};` +
+            `else ${n.h}[${this.formatNum(7)}]=(${this.formatNum(9007199254740992)});` +
+            `if not ${n.Q}[${this.formatNum(18622)}] then ` +
+            `${n.x}=(${this.formatNum(-504366492)}+(${n.v}.${n.S}2((${n.v}.${n.S}2(${n.Q}[${this.formatNum(6721)}]+${n.v}.${n.e}[${this.formatNum(8)}]-${n.v}.${n.e}[${this.formatNum(2)}])),${n.v}.${n.e}[${this.formatNum(8)}])));` +
+            `(${n.Q})[${this.formatNum(18622)}]=(${n.x});else ${n.x}=${n.v}:${n.g}(${n.x},${n.Q});end;` +
+            `return ${this.formatNum(36571)},${n.x};end;else ${n.r},${n.x}=${n.v}:${n.S}(${n.Q},${n.h},${n.x});` +
+            `if ${n.r}==${this.formatNum(21363)} then return ${this.formatNum(36571)},${n.x};end;end;return nil,${n.x};end`);
+        
+        // Function 10: pcall wrapper
+        funcs.push(`${n.X}=pcall`);
+        
+        // Function 11: string.pack
+        funcs.push(`${n.w}2=string.pack`);
+        
+        // Function 12: bit rotate
+        funcs.push(`${n.n}=bit32 and bit32.rrotate or function(${n.v},${n.h})return ${n.v} end`);
+        
+        return funcs.join(',');
+    }
+
+    generateRealFunctions(n, key) {
+        // These are the actual working functions
+        const decoder = `${n.O}2=function(${n.v})` +
+            `local ${n.r}={};local ${n.t}=string.char;local ${n.k}=${this.formatNum(key)};` +
+            `local ${n.x}=bit32 and bit32.bxor or bit and bit.bxor or function(${n.a},${n.b})` +
+            `local ${n.p},${n.c}=1,0;while ${n.a}>0 and ${n.b}>0 do ` +
+            `local ${n.m},${n.s}=${n.a}%2,${n.b}%2;if ${n.m}~=${n.s} then ${n.c}=${n.c}+${n.p} end;` +
+            `${n.a},${n.b},${n.p}=(${n.a}-${n.m})/2,(${n.b}-${n.s})/2,${n.p}*2;end;` +
+            `if ${n.a}<${n.b} then ${n.a}=${n.b} end;while ${n.a}>0 do local ${n.m}=${n.a}%2;` +
+            `if ${n.m}>0 then ${n.c}=${n.c}+${n.p} end;${n.a},${n.p}=(${n.a}-${n.m})/2,${n.p}*2;end;return ${n.c};end;` +
+            `for ${n.i}=1,#${n.v} do ${n.r}[${n.i}]=${n.t}(${n.x}(${n.v}[${n.i}],${n.k}));end;` +
+            `return table.concat(${n.r});end`;
+        
+        return decoder;
+    }
+
+    buildLuraphOutput(n, key, constArr, encodedChunks, fakeFuncs, realFuncs) {
+        // Build encoded data as named table entries instead of one big array
+        const dataEntries = [];
+        encodedChunks.forEach((chunk, idx) => {
+            const name = this.getFuncName();
+            // Mix up the format of numbers
+            const formatted = chunk.map(b => this.formatNum(b)).join(',');
+            dataEntries.push(`${name}={${formatted}}`);
+        });
+        
+        // Create combined data getter
+        const allChunkNames = encodedChunks.map((_, idx) => {
+            return dataEntries[idx].split('=')[0];
+        });
+        
+        // Build the main output in Luraph style
+        const output = `--[[ Meson Obfuscator v4.1 | Professional | meson.dev ]]
+return({${n.w}=function(${n.v},${n.h},${n.Q},${n.x})(${n.Q})[${this.formatNum(10)}]=${n.v}.${n.D};if not ${n.x}[${this.formatNum(30368)}] then ${n.h}=${n.v}:${n.l}(${n.x},${n.h});else ${n.h}=${n.v}:${n.z}(${n.x},${n.h});end;return ${n.h};end,${n.e}={${constArr.map(c => this.formatNum(c)).join(',')}},${n.f}=function(${n.v},${n.v},${n.h})${n.h}=${n.v}[${this.formatNum(29370)}];return ${n.h};end,${n.Q}2=function(${n.v},${n.v},${n.h},${n.Q})${n.h}=(${this.formatNum(30)});${n.v}[${this.formatNum(33)}]=${n.Q};return ${n.h};end,${n.R}=function(${n.v},${n.h},${n.Q})${n.h}=${this.formatNum(-3411915264)}+((${n.v}.${n.P}2((${n.v}.${n.L}2(${n.v}.${n.e}[${this.formatNum(2)}],${n.v}.${n.e}[${this.formatNum(6)}]))+${n.Q}[${this.formatNum(31479)}]))+${n.v}.${n.e}[${this.formatNum(8)}]);${n.Q}[${this.formatNum(23813)}]=(${n.h});return ${n.h};end,${n.R}6=function(${n.v},${n.v},${n.h})${n.h}=${n.v}[${this.formatNum(40)}]();return ${n.h};end,${n.N}=function(${n.v},${n.v},${n.h})${n.h}=${n.v}[${this.formatNum(23813)}];return ${n.h};end,${n.J}6=function(${n.v},${n.h})local ${n.Q},${n.x}=(${this.formatNum(15)});repeat ${n.x},${n.Q}=${n.v}:${n.a}6(${n.h},${n.Q});if ${n.x}==${this.formatNum(49299)} then break;else if ${n.x}==-1 then return-1;end;end;until false;return nil;end,${n.n}6=function(${n.v},${n.v},${n.h})${n.v}=${n.h}[${this.formatNum(23)}]();return ${n.v};end,${n.I}=function(${n.v},${n.h},${n.Q},${n.x})local ${n.r};if ${n.x}<=${this.formatNum(70)} then if not(${n.x}>${this.formatNum(39)})then ${n.x}=${n.v}:${n.d}(${n.x},${n.h},${n.Q});else if not(${n.x}<=${this.formatNum(67)})then ${n.x}=${n.v}:${n.P}(${n.h},${n.Q},${n.x});return ${this.formatNum(36571)},${n.x};else(${n.h})[${this.formatNum(3)}]=${n.v}.${n.i};if not(not ${n.Q}[${this.formatNum(7146)}])then ${n.x}=${n.Q}[${this.formatNum(7146)}];else ${n.x}=${this.formatNum(-3272562488)}+((${n.v}.${n.L}2(${n.v}.${n.e}[${this.formatNum(9)}]>=${n.v}.${n.e}[${this.formatNum(4)}] and ${n.v}.${n.e}[${this.formatNum(9)}] or ${n.x}))-${n.v}.${n.e}[${this.formatNum(1)}]<=${n.v}.${n.e}[${this.formatNum(5)}] and ${n.v}.${n.e}[${this.formatNum(7)}] or ${n.Q}[${this.formatNum(31479)}]);(${n.Q})[${this.formatNum(7146)}]=${n.x};end;end;end;elseif ${n.x}<=${this.formatNum(104)} then if ${n.x}==${this.formatNum(90)} then ${n.v}:${n.L}(${n.h});return ${this.formatNum(30334)},${n.x};else ${n.h}[${this.formatNum(7)}]=(${this.formatNum(9007199254740992)});if not ${n.Q}[${this.formatNum(18622)}] then ${n.x}=(${this.formatNum(-504366492)}+(${n.v}.${n.S}2((${n.v}.${n.S}2(${n.Q}[${this.formatNum(6721)}]+${n.v}.${n.e}[${this.formatNum(8)}]-${n.v}.${n.e}[${this.formatNum(2)}])),${n.v}.${n.e}[${this.formatNum(8)}])));(${n.Q})[${this.formatNum(18622)}]=(${n.x});else ${n.x}=${n.v}:${n.g}(${n.x},${n.Q});end;return ${this.formatNum(36571)},${n.x};end;else ${n.r},${n.x}=${n.v}:${n.S}(${n.Q},${n.h},${n.x});if ${n.r}==${this.formatNum(21363)} then return ${this.formatNum(36571)},${n.x};end;end;return nil,${n.x};end,${n.X}=pcall,${n.w}2=string.pack,${n.n}=bit32 and bit32.rrotate or function(${n.v},${n.h})return ${n.v} end,${this.generateMoreFakeFuncs(n)},${realFuncs},${n.Y}={${this.encodeSourceAsTableEntries(encodedChunks, n)}},${n.Z}=function(${n.s})local ${n.r}={};local ${n.t}=string.char;local ${n.k}=${this.formatNum(key)};local ${n.x}=bit32 and bit32.bxor or bit and bit.bxor or function(${n.a},${n.b})local ${n.p},${n.c}=1,0;while ${n.a}>0 and ${n.b}>0 do local ${n.m},${n.o}=${n.a}%2,${n.b}%2;if ${n.m}~=${n.o} then ${n.c}=${n.c}+${n.p} end;${n.a},${n.b},${n.p}=(${n.a}-${n.m})/2,(${n.b}-${n.o})/2,${n.p}*2;end;if ${n.a}<${n.b} then ${n.a}=${n.b} end;while ${n.a}>0 do local ${n.m}=${n.a}%2;if ${n.m}>0 then ${n.c}=${n.c}+${n.p} end;${n.a},${n.p}=(${n.a}-${n.m})/2,${n.p}*2;end;return ${n.c};end;for ${n.i}=1,#${n.s} do for ${n.j}=1,#${n.s}[${n.i}] do ${n.r}[#${n.r}+1]=${n.t}(${n.x}(${n.s}[${n.i}][${n.j}],${n.k}));end;end;return table.concat(${n.r});end,${n.W}=function(${n.t})local ${n.r}=${n.t}.${n.Z}(${n.t}.${n.Y});local ${n.c},${n.x}=(loadstring or load)(${n.r});if not ${n.c} then error("Meson["..tostring(${n.x}).."]");end;return ${n.c}(...);end}):${n.W}()`;
         
         return output;
     }
 
-    generateMixedDataArray(bytes) {
-        const parts = [];
-        for (let i = 0; i < bytes.length; i++) {
-            const b = bytes[i];
-            const format = Math.floor(Math.random() * 6);
-            switch (format) {
-                case 0:
-                    parts.push(`0x${b.toString(16).toUpperCase()}`);
-                    break;
-                case 1:
-                    parts.push(`0X${b.toString(16)}`);
-                    break;
-                case 2:
-                    parts.push(`0b${b.toString(2)}`);
-                    break;
-                case 3:
-                    parts.push(b.toString());
-                    break;
-                case 4:
-                    parts.push(`0B${b.toString(2)}`);
-                    break;
-                default:
-                    parts.push(`0x${b.toString(16)}`);
-            }
-        }
-        return parts.join(',');
-    }
-
-    generateFakeFunctions(n) {
-        const v1 = this.generateShortName();
-        const v2 = this.generateShortName();
-        const v3 = this.generateShortName();
-        const v4 = this.generateShortName();
+    generateMoreFakeFuncs(n) {
+        const funcs = [];
         
-        const templates = [
-            // Complex looking function 1
-            `${n.check}=function(${v1},${v2},${v3},${v4})` +
-            `(${v3})[${this.formatNumber(10)}]=${v1}.${n.data};` +
-            `if not ${v4}[${this.formatNumber(30368)}] then ${v2}=${v1}:${n.decode}(${v4},${v2});` +
-            `else ${v2}=${v1}:${n.run}(${v4},${v2});end;return ${v2};end`,
-            
-            // Constant array
-            `${n.const}={${this.generateConstArray(9).map(x => this.formatNumber(x)).join(',')}}`,
-            
-            // Simple return function
-            `${n.init}=function(${v1},${v1},${v2})${v2}=${v1}[${this.formatNumber(29370)}];return ${v2};end`,
-            
-            // Function with local
-            `${n.wrap}=function(${v1},${v1},${v2},${v3})${v2}=(${this.formatNumber(30)});` +
-            `${v1}[${this.formatNumber(33)}]=${v3};return ${v2};end`,
-            
-            // Complex math function
-            `${n.execute}=function(${v1},${v2},${v3})` +
-            `${v2}=${this.formatNumber(-3411915264)}+((${v1}.${n.bxor}((${v1}.${n.load}(${v1}.${n.const}[${this.formatNumber(2)}],` +
-            `${v1}.${n.const}[${this.formatNumber(6)}]))+${v3}[${this.formatNumber(31479)}]))+${v1}.${n.const}[${this.formatNumber(8)}]);` +
-            `${v3}[${this.formatNumber(23813)}]=(${v2});return ${v2};end`,
-        ];
+        funcs.push(`${n.u}=function(${n.v},${n.h},${n.Q},${n.x})if ${n.x}==${this.formatNum(59)} then ${n.Q}[${this.formatNum(30)}]=(function(${n.r})${n.Q}[${this.formatNum(28)}]=(${n.r});${n.Q}[${this.formatNum(1)}]=${this.formatNum(1)};end);if not ${n.h}[${this.formatNum(15868)}] then ${n.x}=${n.v}:${n.n}(${n.x},${n.h});else ${n.x}=${n.h}[${this.formatNum(15868)}];end;else if ${n.x}~=${this.formatNum(94)} then else(${n.Q})[${this.formatNum(31)}]=select;return ${this.formatNum(59180)},${n.x};end;end;return nil,${n.x};end`);
         
-        return templates.join(',');
+        funcs.push(`${n.G}=function(${n.v},${n.h},${n.Q},${n.x})local ${n.r};${n.x}[${this.formatNum(28)}]=nil;${n.Q}=(${this.formatNum(112)});repeat ${n.r},${n.Q}=${n.v}:${n.j}(${n.h},${n.Q},${n.x});if ${n.r}==${this.formatNum(270048)} then break;end;until false;${n.x}[${this.formatNum(29)}]=type;return ${n.Q};end`);
+        
+        funcs.push(`${n.a}2=function(${n.v},${n.v})(${n.v})[${this.formatNum(32)}]={};end`);
+        
+        funcs.push(`${n.V}2=function(${n.v},${n.h},${n.Q},${n.x},${n.r},${n.S},${n.m})${n.Q}=(${this.formatNum(63)});while true do if ${n.Q}==${this.formatNum(63)} then ${n.x}[${this.formatNum(46)}]=(function()local ${n.f},${n.K},${n.O},${n.s},${n.T},${n.R};${n.T},${n.O},${n.R},${n.s}=${n.v}:${n.n}6(${n.s},${n.T},${n.O},${n.x},${n.R});local ${n.M},${n.U};${n.M},${n.U},${n.T},${n.R}=${n.v}:${n.p}6(${n.T},${n.O},${n.x},${n.R},${n.M},${n.s},${n.U});return ${n.K};end);if not(not ${n.r}[${this.formatNum(1587)}])then ${n.Q}=${n.v}:${n.D}2(${n.Q});else ${n.Q}=${this.formatNum(98)};end;else break;end;end;return ${n.x};end`);
+        
+        funcs.push(`${n.d}2=string.sub`);
+        
+        funcs.push(`${n.U}2=function(${n.v},${n.v},${n.h})${n.h}=${n.v}[${this.formatNum(36)}]();return ${n.h};end`);
+        
+        return funcs.join(',');
     }
 
-    buildProfessionalOutput(n, key, fakeConsts, dataStr, fakeFuncs) {
-        const v = {
-            a: this.generateShortName(),
-            b: this.generateShortName(),
-            c: this.generateShortName(),
-            d: this.generateShortName(),
-            p: this.generateShortName(),
-            r: this.generateShortName(),
-            t: this.generateShortName(),
-            i: this.generateShortName(),
-            o: this.generateShortName(),
-            x: this.generateShortName(),
-        };
-
-        return `--[[ Meson Obfuscator v4.0 | Professional VM | meson.dev ]]
-return(function(...)
-local ${n.env}=getfenv and getfenv()or _ENV or _G;
-local ${n.bxor}=bit32 and bit32.bxor or bit and bit.bxor or function(${v.a},${v.b})
-local ${v.p},${v.c}=1,0;
-while ${v.a}>${this.formatNumber(0)} and ${v.b}>${this.formatNumber(0)} do
-local ${v.r},${v.x}=${v.a}%${this.formatNumber(2)},${v.b}%${this.formatNumber(2)};
-if ${v.r}~=${v.x} then ${v.c}=${v.c}+${v.p} end;
-${v.a},${v.b},${v.p}=(${v.a}-${v.r})/${this.formatNumber(2)},(${v.b}-${v.x})/${this.formatNumber(2)},${v.p}*${this.formatNumber(2)};
-end;
-if ${v.a}<${v.b} then ${v.a}=${v.b} end;
-while ${v.a}>${this.formatNumber(0)} do
-local ${v.r}=${v.a}%${this.formatNumber(2)};
-if ${v.r}>${this.formatNumber(0)} then ${v.c}=${v.c}+${v.p} end;
-${v.a},${v.p}=(${v.a}-${v.r})/${this.formatNumber(2)},${v.p}*${this.formatNumber(2)};
-end;
-return ${v.c};end;
-return({
-${n.key}=${this.formatNumber(key)},
-${n.const}={${fakeConsts.map(x => this.formatNumber(x)).join(',')}},
-${fakeFuncs},
-${n.data}={${dataStr}},
-${n.decode}=function(${v.t})
-local ${v.o}={};
-local ${v.i}=${this.formatNumber(1)};
-while ${v.i}<=#${v.t} do
-${v.o}[${v.i}]=string.char(${n.bxor}(${v.t}[${v.i}],${this.formatNumber(key)}));
-${v.i}=${v.i}+${this.formatNumber(1)};
-end;
-return table.concat(${v.o});
-end,
-${n.run}=function(${v.t})
-local ${v.r}=${v.t}.${n.decode}(${v.t}.${n.data});
-local ${v.c},${v.x}=(loadstring or load)(${v.r});
-if not ${v.c} then error("Meson["..tostring(${v.x}).."]")end;
-return ${v.c}(...);
-end,
-${n.main}=pcall,
-${n.load}=string.sub,
-${n.str}=string.byte,
-${n.num}=string.char,
-}):${n.run}()
-end)(...)`;
-    }
-
-    encryptStringToArray(str, key) {
-        const bytes = [];
-        for (let i = 0; i < str.length; i++) {
-            bytes.push(str.charCodeAt(i) ^ key);
-        }
-        return bytes;
+    encodeSourceAsTableEntries(chunks, n) {
+        const entries = [];
+        chunks.forEach((chunk, idx) => {
+            const formatted = chunk.map(b => this.formatNum(b)).join(',');
+            entries.push(`{${formatted}}`);
+        });
+        return entries.join(',');
     }
 
     // ==================== HELPER METHODS ====================
@@ -404,13 +350,13 @@ end)(...)`;
 
     encryptStrings(code) {
         this.stringKey = Math.floor(Math.random() * 200) + 50;
-        const funcName = this.generateName('func');
-        const keyVar = this.generateName('short');
-        const eVar = this.generateName('short');
-        const rVar = this.generateName('short');
-        const iVar = this.generateName('short');
+        const funcName = this.getFuncName();
+        const k = this.getSingleLetter();
+        const e = this.getSingleLetter();
+        const r = this.getSingleLetter();
+        const i = this.getSingleLetter();
         
-        const decoder = `local ${funcName};do local ${keyVar}=${this.formatNumber(this.stringKey)};${funcName}=function(${eVar})local ${rVar}=""for ${iVar}=1,#${eVar} do ${rVar}=${rVar}..string.char((bit32 and bit32.bxor or bit and bit.bxor or function(a,b)local p,c=1,0;while a>0 and b>0 do local ra,rb=a%2,b%2;if ra~=rb then c=c+p end;a,b,p=(a-ra)/2,(b-rb)/2,p*2 end;if a<b then a=b end;while a>0 do local ra=a%2;if ra>0 then c=c+p end;a,p=(a-ra)/2,p*2 end;return c end)(${eVar}[${iVar}],${keyVar}))end return ${rVar} end end;`;
+        const decoder = `local ${funcName};do local ${k}=${this.formatNum(this.stringKey)};${funcName}=function(${e})local ${r}=""for ${i}=1,#${e} do ${r}=${r}..string.char((bit32 and bit32.bxor or bit and bit.bxor or function(a,b)local p,c=1,0;while a>0 and b>0 do local m,n=a%2,b%2;if m~=n then c=c+p end;a,b,p=(a-m)/2,(b-n)/2,p*2 end;if a<b then a=b end;while a>0 do local m=a%2;if m>0 then c=c+p end;a,p=(a-m)/2,p*2 end;return c end)(${e}[${i}],${k}))end return ${r} end end;`;
 
         const stringPattern = /(["'])(?:(?!\1)[^\\]|\\.)*\1/g;
         
@@ -419,40 +365,10 @@ end)(...)`;
             if (content.length < 2 || content.includes('\\')) return match;
             
             const encrypted = [];
-            for (let i = 0; i < content.length; i++) {
-                encrypted.push(content.charCodeAt(i) ^ this.stringKey);
+            for (let j = 0; j < content.length; j++) {
+                encrypted.push(content.charCodeAt(j) ^ this.stringKey);
             }
-            return `${funcName}({${encrypted.map(b => this.formatNumber(b)).join(',')}})`;
-        });
-
-        return decoder + result;
-    }
-
-    encryptStringsAdvanced(code) {
-        this.stringKey = Math.floor(Math.random() * 200) + 50;
-        const funcName = this.generateName('func');
-        const tableVar = this.generateName('short');
-        const eVar = this.generateName('short');
-        const kVar = this.generateName('short');
-        const rVar = this.generateName('short');
-        const iVar = this.generateName('short');
-        const cVar = this.generateName('short');
-        const xVar = this.generateName('short');
-        
-        const decoder = `local ${funcName};do local ${tableVar}={};for ${iVar}=0,255 do ${tableVar}[${iVar}]=string.char(${iVar})end;${funcName}=function(${eVar},${kVar})local ${rVar}=""for ${iVar}=1,#${eVar} do local ${cVar}=${eVar}[${iVar}]local ${xVar}=(bit32 and bit32.bxor(${cVar},${kVar})or bit and bit.bxor(${cVar},${kVar})or ${cVar})${rVar}=${rVar}..(${tableVar}[${xVar}]or string.char(${xVar}))end return ${rVar} end end;`;
-
-        const stringPattern = /(["'])(?:(?!\1)[^\\]|\\.)*\1/g;
-        
-        let result = code.replace(stringPattern, (match) => {
-            const content = match.slice(1, -1);
-            if (content.length < 2 || content.includes('\\')) return match;
-            
-            const encrypted = [];
-            for (let i = 0; i < content.length; i++) {
-                encrypted.push(content.charCodeAt(i) ^ this.stringKey);
-            }
-            
-            return `${funcName}({${encrypted.map(b => this.formatNumber(b)).join(',')}},${this.formatNumber(this.stringKey)})`;
+            return `${funcName}({${encrypted.map(b => this.formatNum(b)).join(',')}})`;
         });
 
         return decoder + result;
@@ -460,24 +376,10 @@ end)(...)`;
 
     encodeNumbers(code) {
         const numberPattern = /(?<![.\w])(\d+)(?![.\dxXbB])/g;
-        
         return code.replace(numberPattern, (match, num) => {
             const n = parseInt(num);
             if (n < 2 || n > 99999 || Math.random() > 0.5) return match;
-
-            const methods = [
-                () => {
-                    const a = Math.floor(Math.random() * 500);
-                    return `(${this.formatNumber(a)}+${this.formatNumber(n - a)})`;
-                },
-                () => {
-                    const a = n + Math.floor(Math.random() * 500);
-                    return `(${this.formatNumber(a)}-${this.formatNumber(a - n)})`;
-                },
-                () => this.formatNumber(n)
-            ];
-
-            return methods[Math.floor(Math.random() * methods.length)]();
+            return this.formatNum(n);
         });
     }
 
@@ -490,17 +392,7 @@ end)(...)`;
         while ((match = localPattern.exec(code)) !== null) {
             const varName = match[1];
             if (!protectedNames.has(varName) && !renames.has(varName)) {
-                renames.set(varName, this.generateName());
-            }
-        }
-
-        const funcPattern = /function\s*[^(]*\(([^)]*)\)/g;
-        while ((match = funcPattern.exec(code)) !== null) {
-            const params = match[1].split(',').map(p => p.trim()).filter(p => p && p !== '...');
-            for (const param of params) {
-                if (!protectedNames.has(param) && !renames.has(param)) {
-                    renames.set(param, this.generateName());
-                }
+                renames.set(varName, this.getSingleLetter());
             }
         }
 
@@ -513,64 +405,16 @@ end)(...)`;
         return result;
     }
 
-    addDeadCode(code) {
-        const snippets = [];
-        const count = Math.floor(Math.random() * 4) + 2;
-
-        for (let i = 0; i < count; i++) {
-            const v = this.generateName('short');
-            const type = Math.floor(Math.random() * 5);
-            
-            switch (type) {
-                case 0:
-                    snippets.push(`local ${v}=${this.formatNumber(Math.floor(Math.random() * 10000))};`);
-                    break;
-                case 1:
-                    snippets.push(`local ${v}=function()return nil end;`);
-                    break;
-                case 2:
-                    const a = Math.floor(Math.random() * 100) + 100;
-                    snippets.push(`if ${this.formatNumber(a)}>${this.formatNumber(a + 50)} then local ${v}=nil end;`);
-                    break;
-                case 3:
-                    snippets.push(`local ${v}={};`);
-                    break;
-                case 4:
-                    snippets.push(`local ${v}=string.rep("",0);`);
-                    break;
-            }
-        }
-
-        return snippets.join('') + code;
-    }
-
-    addOpaquePredicates(code) {
-        const checkVar = this.generateName('short');
-        const predicates = [
-            `(${this.formatNumber(Math.floor(Math.random() * 100) + 1)}*${this.formatNumber(Math.floor(Math.random() * 100) + 1)}>=${this.formatNumber(1)})`,
-            `(type("")=="string")`,
-            `(type({})=="table")`,
-            `(#""==${this.formatNumber(0)})`
-        ];
-
-        const pred = predicates[Math.floor(Math.random() * predicates.length)];
-        return `local ${checkVar}=${pred};if not ${checkVar} then return end;` + code;
-    }
-
     wrapControlFlow(code) {
-        const stateVar = this.generateName('short');
-        const funcVar = this.generateName('short');
-        
-        return `local ${stateVar}=${this.formatNumber(1)};local ${funcVar}={[${this.formatNumber(1)}]=function()${code};${stateVar}=${this.formatNumber(0)}end};while ${stateVar}>${this.formatNumber(0)} do if ${funcVar}[${stateVar}]then ${funcVar}[${stateVar}]()end end;`;
+        const s = this.getSingleLetter();
+        const f = this.getSingleLetter();
+        return `local ${s}=1;local ${f}={[1]=function()${code};${s}=0 end};while ${s}>0 do if ${f}[${s}]then ${f}[${s}]()end end;`;
     }
 
     minify(code) {
-        let result = code;
-        result = result.split('\n').map(line => line.trim()).filter(line => line).join(' ');
+        let result = code.split('\n').map(l => l.trim()).filter(l => l).join(' ');
         result = result.replace(/\s+/g, ' ');
         result = result.replace(/\s*([{}()\[\],;])\s*/g, '$1');
-        result = result.replace(/\b(and|or|not|then|do|end|else|elseif|in|local|function|return|if|while|for|repeat|until)\b/g, ' $1 ');
-        result = result.replace(/\s+/g, ' ');
         return result.trim();
     }
 
