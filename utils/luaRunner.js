@@ -1,6 +1,6 @@
 /**
- * Meson Obfuscator v4.1 - Luraph-Style Professional Output
- * Complex function tables, method calls, minimal number arrays
+ * Meson Obfuscator v5.0 - Professional Luraph-Style
+ * Mixed encoding: strings, numbers, symbols - NOT just numbers!
  */
 
 class MesonObfuscator {
@@ -14,10 +14,8 @@ class MesonObfuscator {
         this.stringKey = Math.floor(Math.random() * 200) + 50;
     }
 
-    // ==================== NAME GENERATION ====================
-    
     // Single letter names like Luraph
-    getSingleLetter() {
+    getVar() {
         const letters = 'vhQxrSmfKOMUTRBCDEFGHIJLNPWYZabcdegijklnopqstuwyz';
         for (const l of letters) {
             if (!this.usedNames.has(l)) {
@@ -25,41 +23,43 @@ class MesonObfuscator {
                 return l;
             }
         }
-        return '_' + Math.random().toString(36).substr(2, 2);
+        return '_' + (this.varCounter++);
     }
 
-    // Function-style names: w, e, f, Q2, R6, etc.
-    getFuncName() {
-        const styles = [
-            () => this.getSingleLetter(),
-            () => this.getSingleLetter() + Math.floor(Math.random() * 10),
-            () => this.getSingleLetter().toUpperCase() + Math.floor(Math.random() * 10),
-        ];
-        return styles[Math.floor(Math.random() * styles.length)]();
+    // Format numbers with variety
+    fmtNum(num) {
+        if (num < 0) return `(-${this.fmtNum(-num)})`;
+        const r = Math.random();
+        if (r < 0.2) return `0x${num.toString(16).toUpperCase()}`;
+        if (r < 0.4) return `0X${num.toString(16)}`;
+        if (r < 0.5 && num < 256) return `0b${num.toString(2)}`;
+        if (r < 0.6 && num < 256) return `0B${num.toString(2)}`;
+        return num.toString();
     }
 
-    generateName(style = 'single') {
-        if (style === 'single') return this.getSingleLetter();
-        if (style === 'func') return this.getFuncName();
-        return this.getSingleLetter();
+    // Generate random looking string (like Luraph's middle section)
+    generateRandomString(length) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/~`';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return result;
     }
 
-    // Format numbers with Luraph-style variations
-    formatNum(num) {
-        if (num < 0) return `(-${this.formatNum(-num)})`;
-        const formats = [
-            () => `0x${num.toString(16).toUpperCase()}`,
-            () => `0X${num.toString(16)}`,
-            () => `0b${num.toString(2)}`,
-            () => `0B${num.toString(2).replace(/(.{4})(?=.)/g, '$1_')}`,
-            () => num > 1000 ? num.toString().replace(/\B(?=(\d{2})+(?!\d))/g, '_') : num.toString(),
-            () => num.toString(),
-        ];
-        return formats[Math.floor(Math.random() * formats.length)]();
+    // Encode string to Base91-like format (like Luraph)
+    encodeToBase91(str) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,-./:;<=>?@[]^_`{|}~';
+        let result = '';
+        for (let i = 0; i < str.length; i++) {
+            const code = str.charCodeAt(i);
+            result += chars[code % chars.length];
+            result += chars[Math.floor(code / chars.length) % chars.length];
+        }
+        return result;
     }
 
-    // ==================== MAIN ENTRY ====================
-
+    // Main entry
     async obfuscate(sourceCode, options = {}) {
         const startTime = Date.now();
         this.reset();
@@ -70,20 +70,20 @@ class MesonObfuscator {
 
             switch (tier) {
                 case 'basic':
-                    output = this.applyBasicObfuscation(sourceCode);
+                    output = this.basicTier(sourceCode);
                     break;
                 case 'standard':
-                    output = this.applyStandardObfuscation(sourceCode);
+                    output = this.standardTier(sourceCode);
                     break;
                 case 'advanced':
-                    output = this.applyAdvancedObfuscation(sourceCode);
+                    output = this.advancedTier(sourceCode);
                     break;
                 case 'vm':
                 case 'ultimate':
-                    output = this.applyVMObfuscation(sourceCode);
+                    output = this.vmTier(sourceCode);
                     break;
                 default:
-                    output = this.applyBasicObfuscation(sourceCode);
+                    output = this.basicTier(sourceCode);
             }
 
             return {
@@ -92,7 +92,6 @@ class MesonObfuscator {
                 time: Date.now() - startTime,
                 tier: tier
             };
-
         } catch (error) {
             console.error('[Obfuscator Error]', error);
             return {
@@ -104,240 +103,132 @@ class MesonObfuscator {
         }
     }
 
-    // ==================== BASIC/STANDARD/ADVANCED TIERS ====================
-
-    applyBasicObfuscation(code) {
+    // ==================== BASIC TIER ====================
+    basicTier(code) {
         code = this.removeComments(code);
-        code = this.encryptStrings(code);
-        code = this.minify(code);
-        return `--[[ Meson v4.1 ]]\n` + code;
+        code = this.encryptStringsSimple(code);
+        return `--[[ Meson v5.0 ]]\n` + this.minify(code);
     }
 
-    applyStandardObfuscation(code) {
+    // ==================== STANDARD TIER ====================
+    standardTier(code) {
         code = this.removeComments(code);
-        code = this.encryptStrings(code);
-        code = this.encodeNumbers(code);
-        code = this.renameVariables(code);
-        code = this.minify(code);
-        return `--[[ Meson v4.1 ]]\n` + code;
+        code = this.encryptStringsSimple(code);
+        code = this.renameVars(code);
+        return `--[[ Meson v5.0 ]]\n` + this.minify(code);
     }
 
-    applyAdvancedObfuscation(code) {
+    // ==================== ADVANCED TIER ====================
+    advancedTier(code) {
         code = this.removeComments(code);
-        code = this.encryptStrings(code);
-        code = this.encodeNumbers(code);
-        code = this.renameVariables(code);
-        code = this.wrapControlFlow(code);
-        code = this.minify(code);
-        return `--[[ Meson v4.1 ]]\n` + code;
+        code = this.encryptStringsSimple(code);
+        code = this.renameVars(code);
+        code = this.wrapCode(code);
+        return `--[[ Meson v5.0 ]]\n` + this.minify(code);
     }
 
     // ==================== VM TIER - LURAPH STYLE ====================
-
-    applyVMObfuscation(sourceCode) {
+    vmTier(sourceCode) {
         this.reset();
-        return this.generateLuraphStyleVM(sourceCode);
+        const code = this.removeComments(sourceCode);
+        return this.buildLuraphStyle(code);
     }
 
-    generateLuraphStyleVM(sourceCode) {
-        // Generate all function/variable names first
-        const n = {
-            // Main structure names
-            w: this.getFuncName(), e: this.getFuncName(), f: this.getFuncName(),
-            Q: this.getFuncName(), R: this.getFuncName(), N: this.getFuncName(),
-            I: this.getFuncName(), X: this.getFuncName(), n: this.getFuncName(),
-            d: this.getFuncName(), u: this.getFuncName(), G: this.getFuncName(),
-            a: this.getFuncName(), V: this.getFuncName(), U: this.getFuncName(),
-            S: this.getFuncName(), P: this.getFuncName(), L: this.getFuncName(),
-            z: this.getFuncName(), l: this.getFuncName(), g: this.getFuncName(),
-            D: this.getFuncName(), K: this.getFuncName(), M: this.getFuncName(),
-            T: this.getFuncName(), B: this.getFuncName(), C: this.getFuncName(),
-            H: this.getFuncName(), J: this.getFuncName(), Y: this.getFuncName(),
-            Z: this.getFuncName(), W: this.getFuncName(), O: this.getFuncName(),
-            // Parameter names
-            v: 'v', h: 'h', x: 'x', r: 'r', s: 's', m: 'm',
-            o: 'o', p: 'p', c: 'c', k: 'k', t: 't', i: 'i',
-        };
-
+    buildLuraphStyle(sourceCode) {
+        // Get short variable names
+        const v = this.getVar();
+        const h = this.getVar();
+        const Q = this.getVar();
+        const x = this.getVar();
+        const r = this.getVar();
+        const S = this.getVar();
+        const m = this.getVar();
+        const f = this.getVar();
+        const K = this.getVar();
+        const O = this.getVar();
+        const s = this.getVar();
+        const T = this.getVar();
+        const M = this.getVar();
+        const U = this.getVar();
+        const e = this.getVar();
+        const n = this.getVar();
+        const w = this.getVar();
+        const d = this.getVar();
+        const I = this.getVar();
+        const G = this.getVar();
+        const a = this.getVar();
+        const N = this.getVar();
+        const P = this.getVar();
+        const L = this.getVar();
+        const z = this.getVar();
+        const l = this.getVar();
+        const g = this.getVar();
+        const D = this.getVar();
+        const B = this.getVar();
+        const C = this.getVar();
+        const Y = this.getVar();
+        const Z = this.getVar();
+        const W = this.getVar();
+        const J = this.getVar();
+        
         // Encryption key
         const key = Math.floor(Math.random() * 200) + 50;
         
-        // Generate random constants array (like Luraph's e={...})
-        const constArr = Array(9).fill(0).map(() => Math.floor(Math.random() * 4294967295));
+        // Encode source to Base91-like string (like Luraph's middle section)
+        const encodedSource = this.encodeToBase91(sourceCode);
         
-        // Process and encrypt source code
-        const processedCode = this.removeComments(sourceCode);
-        
-        // Encode source as a more complex format (not just byte array)
-        const encodedData = this.encodeSourceComplex(processedCode, key, n);
-        
-        // Generate fake complex functions
-        const fakeFuncs = this.generateComplexFunctions(n, key);
-        
-        // Generate the real decoder/executor
-        const realFuncs = this.generateRealFunctions(n, key);
-        
-        // Build final output
-        return this.buildLuraphOutput(n, key, constArr, encodedData, fakeFuncs, realFuncs);
-    }
-
-    encodeSourceComplex(source, key, n) {
-        // Split source into chunks and encode differently
+        // Split encoded source into chunks for variety
+        const chunkSize = 60;
         const chunks = [];
-        const chunkSize = 50 + Math.floor(Math.random() * 50);
-        
-        for (let i = 0; i < source.length; i += chunkSize) {
-            const chunk = source.substr(i, chunkSize);
-            const encoded = [];
-            for (let j = 0; j < chunk.length; j++) {
-                encoded.push(chunk.charCodeAt(j) ^ key);
-            }
-            chunks.push(encoded);
+        for (let i = 0; i < encodedSource.length; i += chunkSize) {
+            chunks.push(encodedSource.substr(i, chunkSize));
         }
         
-        return chunks;
-    }
+        // Generate random constants array
+        const constArr = Array(9).fill(0).map(() => Math.floor(Math.random() * 4294967295));
+        
+        // Build the output
+        const output = `--[[ Meson Obfuscator v5.0 | https://meson.dev ]]
+return(function(...)
+local ${e}={${constArr.map(c => this.fmtNum(c)).join(',')}};
+local ${w}=function(${v},${h},${Q},${x})(${Q})[${this.fmtNum(10)}]=${v}.${D};if not ${x}[${this.fmtNum(30368)}] then ${h}=${v}:${l}(${x},${h});else ${h}=${v}:${z}(${x},${h});end;return ${h};end;
+local ${f}=function(${v},${v},${h})${h}=${v}[${this.fmtNum(29370)}];return ${h};end;
+local ${Q}2=function(${v},${v},${h},${Q})${h}=(${this.fmtNum(30)});${v}[${this.fmtNum(33)}]=${Q};return ${h};end;
+local ${N}=function(${v},${h},${Q})${h}=${this.fmtNum(-3411915264)}+((${v}.${P}2((${v}.${L}2(${v}.${e}[${this.fmtNum(2)}],${v}.${e}[${this.fmtNum(6)}]))+${Q}[${this.fmtNum(31479)}]))+${v}.${e}[${this.fmtNum(8)}]);${Q}[${this.fmtNum(23813)}]=(${h});return ${h};end;
+local ${N}6=function(${v},${v},${h})${h}=${v}[${this.fmtNum(40)}]();return ${h};end;
+local ${I}=function(${v},${v},${h})${h}=${v}[${this.fmtNum(23813)}];return ${h};end;
+local ${J}6=function(${v},${h})local ${Q},${x}=(${this.fmtNum(15)});repeat ${x},${Q}=${v}:${a}6(${h},${Q});if ${x}==${this.fmtNum(49299)} then break;else if ${x}==-1 then return-1;end;end;until false;return nil;end;
+local ${n}6=function(${v},${v},${h})${v}=${h}[${this.fmtNum(23)}]();return ${v};end;
+local ${G}=function(${v},${h},${Q},${x})local ${r};if ${x}<=${this.fmtNum(70)} then if not(${x}>${this.fmtNum(39)})then ${x}=${v}:${d}(${x},${h},${Q});else if not(${x}<=${this.fmtNum(67)})then ${x}=${v}:${P}(${h},${Q},${x});return ${this.fmtNum(36571)},${x};else(${h})[${this.fmtNum(3)}]=${v}.${g};if not(not ${Q}[${this.fmtNum(7146)}])then ${x}=${Q}[${this.fmtNum(7146)}];else ${x}=${this.fmtNum(-3272562488)}+((${v}.${L}2(${v}.${e}[${this.fmtNum(9)}]>=${v}.${e}[${this.fmtNum(4)}] and ${v}.${e}[${this.fmtNum(9)}] or ${x}))-${v}.${e}[${this.fmtNum(1)}]<=${v}.${e}[${this.fmtNum(5)}] and ${v}.${e}[${this.fmtNum(7)}] or ${Q}[${this.fmtNum(31479)}]);(${Q})[${this.fmtNum(7146)}]=${x};end;end;end;return nil,${x};end;
+local ${B}=pcall;
+local ${w}2=string.pack or function()end;
+local ${n}=bit32 and bit32.rrotate or function(${v})return ${v} end;
+local ${d}2=string.sub;
+local ${a}2=function(${v},${v})(${v})[${this.fmtNum(32)}]={};end;
+local ${U}2=function(${v},${v},${h})${h}=${v}[${this.fmtNum(36)}]();return ${h};end;
+local ${C}="${chunks.join(`";
+local ${Y}="`)}";
+local ${Z}=function()
+local ${s}=${C}..${Y};
+local ${r}="";
+local ${T}="${'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,-./:;<=>?@[]^_`{|}~'}";
+local ${m}=#${T};
+for ${K}=1,#${s},2 do
+local ${O}=string.find(${T},string.sub(${s},${K},${K}),1,true)or 1;
+local ${M}=string.find(${T},string.sub(${s},${K}+1,${K}+1),1,true)or 1;
+${r}=${r}..string.char(((${M}-1)*${m}+(${O}-1))%256);
+end;
+return ${r};
+end;
+local ${W}=${Z}();
+local ${J},${x}=(loadstring or load)(${W});
+if not ${J} then 
+error("Meson: "..(${x} or "Unknown error"));
+end;
+return ${J}(...);
+end)(...)`;
 
-    generateComplexFunctions(n, key) {
-        const funcs = [];
-        
-        // Function 1: Looks like a decoder with method calls
-        funcs.push(`${n.w}=function(${n.v},${n.h},${n.Q},${n.x})` +
-            `(${n.Q})[${this.formatNum(10)}]=${n.v}.${n.D};` +
-            `if not ${n.x}[${this.formatNum(30368)}] then ` +
-            `${n.h}=${n.v}:${n.l}(${n.x},${n.h});` +
-            `else ${n.h}=${n.v}:${n.z}(${n.x},${n.h});end;` +
-            `return ${n.h};end`);
-        
-        // Function 2: Simple return
-        funcs.push(`${n.f}=function(${n.v},${n.v},${n.h})` +
-            `${n.h}=${n.v}[${this.formatNum(29370)}];return ${n.h};end`);
-        
-        // Function 3: Assignment with return
-        funcs.push(`${n.Q}2=function(${n.v},${n.v},${n.h},${n.Q})` +
-            `${n.h}=(${this.formatNum(30)});` +
-            `${n.v}[${this.formatNum(33)}]=${n.Q};return ${n.h};end`);
-        
-        // Function 4: Complex math
-        funcs.push(`${n.R}=function(${n.v},${n.h},${n.Q})` +
-            `${n.h}=${this.formatNum(-3411915264)}+((${n.v}.${n.P}2((${n.v}.${n.L}2(${n.v}.${n.e}[${this.formatNum(2)}],` +
-            `${n.v}.${n.e}[${this.formatNum(6)}]))+${n.Q}[${this.formatNum(31479)}]))+${n.v}.${n.e}[${this.formatNum(8)}]);` +
-            `${n.Q}[${this.formatNum(23813)}]=(${n.h});return ${n.h};end`);
-        
-        // Function 5: Table getter
-        funcs.push(`${n.R}6=function(${n.v},${n.v},${n.h})` +
-            `${n.h}=${n.v}[${this.formatNum(40)}]();return ${n.h};end`);
-        
-        // Function 6: Property getter
-        funcs.push(`${n.N}=function(${n.v},${n.v},${n.h})` +
-            `${n.h}=${n.v}[${this.formatNum(23813)}];return ${n.h};end`);
-        
-        // Function 7: Loop function
-        funcs.push(`${n.J}6=function(${n.v},${n.h})` +
-            `local ${n.Q},${n.x}=(${this.formatNum(15)});` +
-            `repeat ${n.x},${n.Q}=${n.v}:${n.a}6(${n.h},${n.Q});` +
-            `if ${n.x}==${this.formatNum(49299)} then break;` +
-            `else if ${n.x}==-1 then return-1;end;end;until false;return nil;end`);
-        
-        // Function 8: Another getter
-        funcs.push(`${n.n}6=function(${n.v},${n.v},${n.h})` +
-            `${n.v}=${n.h}[${this.formatNum(23)}]();return ${n.v};end`);
-        
-        // Function 9: Complex conditional
-        funcs.push(`${n.I}=function(${n.v},${n.h},${n.Q},${n.x})` +
-            `local ${n.r};if ${n.x}<=${this.formatNum(70)} then ` +
-            `if not(${n.x}>${this.formatNum(39)})then ${n.x}=${n.v}:${n.d}(${n.x},${n.h},${n.Q});` +
-            `else if not(${n.x}<=${this.formatNum(67)})then ${n.x}=${n.v}:${n.P}(${n.h},${n.Q},${n.x});` +
-            `return ${this.formatNum(36571)},${n.x};else(${n.h})[${this.formatNum(3)}]=${n.v}.${n.i};` +
-            `if not(not ${n.Q}[${this.formatNum(7146)}])then ${n.x}=${n.Q}[${this.formatNum(7146)}];` +
-            `else ${n.x}=${this.formatNum(-3272562488)}+((${n.v}.${n.L}2(${n.v}.${n.e}[${this.formatNum(9)}]>=${n.v}.${n.e}[${this.formatNum(4)}] ` +
-            `and ${n.v}.${n.e}[${this.formatNum(9)}] or ${n.x}))-${n.v}.${n.e}[${this.formatNum(1)}]<=${n.v}.${n.e}[${this.formatNum(5)}] ` +
-            `and ${n.v}.${n.e}[${this.formatNum(7)}] or ${n.Q}[${this.formatNum(31479)}]);` +
-            `(${n.Q})[${this.formatNum(7146)}]=${n.x};end;end;end;` +
-            `elseif ${n.x}<=${this.formatNum(104)} then if ${n.x}==${this.formatNum(90)} then ` +
-            `${n.v}:${n.L}(${n.h});return ${this.formatNum(30334)},${n.x};` +
-            `else ${n.h}[${this.formatNum(7)}]=(${this.formatNum(9007199254740992)});` +
-            `if not ${n.Q}[${this.formatNum(18622)}] then ` +
-            `${n.x}=(${this.formatNum(-504366492)}+(${n.v}.${n.S}2((${n.v}.${n.S}2(${n.Q}[${this.formatNum(6721)}]+${n.v}.${n.e}[${this.formatNum(8)}]-${n.v}.${n.e}[${this.formatNum(2)}])),${n.v}.${n.e}[${this.formatNum(8)}])));` +
-            `(${n.Q})[${this.formatNum(18622)}]=(${n.x});else ${n.x}=${n.v}:${n.g}(${n.x},${n.Q});end;` +
-            `return ${this.formatNum(36571)},${n.x};end;else ${n.r},${n.x}=${n.v}:${n.S}(${n.Q},${n.h},${n.x});` +
-            `if ${n.r}==${this.formatNum(21363)} then return ${this.formatNum(36571)},${n.x};end;end;return nil,${n.x};end`);
-        
-        // Function 10: pcall wrapper
-        funcs.push(`${n.X}=pcall`);
-        
-        // Function 11: string.pack
-        funcs.push(`${n.w}2=string.pack`);
-        
-        // Function 12: bit rotate
-        funcs.push(`${n.n}=bit32 and bit32.rrotate or function(${n.v},${n.h})return ${n.v} end`);
-        
-        return funcs.join(',');
-    }
-
-    generateRealFunctions(n, key) {
-        // These are the actual working functions
-        const decoder = `${n.O}2=function(${n.v})` +
-            `local ${n.r}={};local ${n.t}=string.char;local ${n.k}=${this.formatNum(key)};` +
-            `local ${n.x}=bit32 and bit32.bxor or bit and bit.bxor or function(${n.a},${n.b})` +
-            `local ${n.p},${n.c}=1,0;while ${n.a}>0 and ${n.b}>0 do ` +
-            `local ${n.m},${n.s}=${n.a}%2,${n.b}%2;if ${n.m}~=${n.s} then ${n.c}=${n.c}+${n.p} end;` +
-            `${n.a},${n.b},${n.p}=(${n.a}-${n.m})/2,(${n.b}-${n.s})/2,${n.p}*2;end;` +
-            `if ${n.a}<${n.b} then ${n.a}=${n.b} end;while ${n.a}>0 do local ${n.m}=${n.a}%2;` +
-            `if ${n.m}>0 then ${n.c}=${n.c}+${n.p} end;${n.a},${n.p}=(${n.a}-${n.m})/2,${n.p}*2;end;return ${n.c};end;` +
-            `for ${n.i}=1,#${n.v} do ${n.r}[${n.i}]=${n.t}(${n.x}(${n.v}[${n.i}],${n.k}));end;` +
-            `return table.concat(${n.r});end`;
-        
-        return decoder;
-    }
-
-    buildLuraphOutput(n, key, constArr, encodedChunks, fakeFuncs, realFuncs) {
-        // Build encoded data as named table entries instead of one big array
-        const dataEntries = [];
-        encodedChunks.forEach((chunk, idx) => {
-            const name = this.getFuncName();
-            // Mix up the format of numbers
-            const formatted = chunk.map(b => this.formatNum(b)).join(',');
-            dataEntries.push(`${name}={${formatted}}`);
-        });
-        
-        // Create combined data getter
-        const allChunkNames = encodedChunks.map((_, idx) => {
-            return dataEntries[idx].split('=')[0];
-        });
-        
-        // Build the main output in Luraph style
-        const output = `--[[ Meson Obfuscator v4.1 | Professional | meson.dev ]]
-return({${n.w}=function(${n.v},${n.h},${n.Q},${n.x})(${n.Q})[${this.formatNum(10)}]=${n.v}.${n.D};if not ${n.x}[${this.formatNum(30368)}] then ${n.h}=${n.v}:${n.l}(${n.x},${n.h});else ${n.h}=${n.v}:${n.z}(${n.x},${n.h});end;return ${n.h};end,${n.e}={${constArr.map(c => this.formatNum(c)).join(',')}},${n.f}=function(${n.v},${n.v},${n.h})${n.h}=${n.v}[${this.formatNum(29370)}];return ${n.h};end,${n.Q}2=function(${n.v},${n.v},${n.h},${n.Q})${n.h}=(${this.formatNum(30)});${n.v}[${this.formatNum(33)}]=${n.Q};return ${n.h};end,${n.R}=function(${n.v},${n.h},${n.Q})${n.h}=${this.formatNum(-3411915264)}+((${n.v}.${n.P}2((${n.v}.${n.L}2(${n.v}.${n.e}[${this.formatNum(2)}],${n.v}.${n.e}[${this.formatNum(6)}]))+${n.Q}[${this.formatNum(31479)}]))+${n.v}.${n.e}[${this.formatNum(8)}]);${n.Q}[${this.formatNum(23813)}]=(${n.h});return ${n.h};end,${n.R}6=function(${n.v},${n.v},${n.h})${n.h}=${n.v}[${this.formatNum(40)}]();return ${n.h};end,${n.N}=function(${n.v},${n.v},${n.h})${n.h}=${n.v}[${this.formatNum(23813)}];return ${n.h};end,${n.J}6=function(${n.v},${n.h})local ${n.Q},${n.x}=(${this.formatNum(15)});repeat ${n.x},${n.Q}=${n.v}:${n.a}6(${n.h},${n.Q});if ${n.x}==${this.formatNum(49299)} then break;else if ${n.x}==-1 then return-1;end;end;until false;return nil;end,${n.n}6=function(${n.v},${n.v},${n.h})${n.v}=${n.h}[${this.formatNum(23)}]();return ${n.v};end,${n.I}=function(${n.v},${n.h},${n.Q},${n.x})local ${n.r};if ${n.x}<=${this.formatNum(70)} then if not(${n.x}>${this.formatNum(39)})then ${n.x}=${n.v}:${n.d}(${n.x},${n.h},${n.Q});else if not(${n.x}<=${this.formatNum(67)})then ${n.x}=${n.v}:${n.P}(${n.h},${n.Q},${n.x});return ${this.formatNum(36571)},${n.x};else(${n.h})[${this.formatNum(3)}]=${n.v}.${n.i};if not(not ${n.Q}[${this.formatNum(7146)}])then ${n.x}=${n.Q}[${this.formatNum(7146)}];else ${n.x}=${this.formatNum(-3272562488)}+((${n.v}.${n.L}2(${n.v}.${n.e}[${this.formatNum(9)}]>=${n.v}.${n.e}[${this.formatNum(4)}] and ${n.v}.${n.e}[${this.formatNum(9)}] or ${n.x}))-${n.v}.${n.e}[${this.formatNum(1)}]<=${n.v}.${n.e}[${this.formatNum(5)}] and ${n.v}.${n.e}[${this.formatNum(7)}] or ${n.Q}[${this.formatNum(31479)}]);(${n.Q})[${this.formatNum(7146)}]=${n.x};end;end;end;elseif ${n.x}<=${this.formatNum(104)} then if ${n.x}==${this.formatNum(90)} then ${n.v}:${n.L}(${n.h});return ${this.formatNum(30334)},${n.x};else ${n.h}[${this.formatNum(7)}]=(${this.formatNum(9007199254740992)});if not ${n.Q}[${this.formatNum(18622)}] then ${n.x}=(${this.formatNum(-504366492)}+(${n.v}.${n.S}2((${n.v}.${n.S}2(${n.Q}[${this.formatNum(6721)}]+${n.v}.${n.e}[${this.formatNum(8)}]-${n.v}.${n.e}[${this.formatNum(2)}])),${n.v}.${n.e}[${this.formatNum(8)}])));(${n.Q})[${this.formatNum(18622)}]=(${n.x});else ${n.x}=${n.v}:${n.g}(${n.x},${n.Q});end;return ${this.formatNum(36571)},${n.x};end;else ${n.r},${n.x}=${n.v}:${n.S}(${n.Q},${n.h},${n.x});if ${n.r}==${this.formatNum(21363)} then return ${this.formatNum(36571)},${n.x};end;end;return nil,${n.x};end,${n.X}=pcall,${n.w}2=string.pack,${n.n}=bit32 and bit32.rrotate or function(${n.v},${n.h})return ${n.v} end,${this.generateMoreFakeFuncs(n)},${realFuncs},${n.Y}={${this.encodeSourceAsTableEntries(encodedChunks, n)}},${n.Z}=function(${n.s})local ${n.r}={};local ${n.t}=string.char;local ${n.k}=${this.formatNum(key)};local ${n.x}=bit32 and bit32.bxor or bit and bit.bxor or function(${n.a},${n.b})local ${n.p},${n.c}=1,0;while ${n.a}>0 and ${n.b}>0 do local ${n.m},${n.o}=${n.a}%2,${n.b}%2;if ${n.m}~=${n.o} then ${n.c}=${n.c}+${n.p} end;${n.a},${n.b},${n.p}=(${n.a}-${n.m})/2,(${n.b}-${n.o})/2,${n.p}*2;end;if ${n.a}<${n.b} then ${n.a}=${n.b} end;while ${n.a}>0 do local ${n.m}=${n.a}%2;if ${n.m}>0 then ${n.c}=${n.c}+${n.p} end;${n.a},${n.p}=(${n.a}-${n.m})/2,${n.p}*2;end;return ${n.c};end;for ${n.i}=1,#${n.s} do for ${n.j}=1,#${n.s}[${n.i}] do ${n.r}[#${n.r}+1]=${n.t}(${n.x}(${n.s}[${n.i}][${n.j}],${n.k}));end;end;return table.concat(${n.r});end,${n.W}=function(${n.t})local ${n.r}=${n.t}.${n.Z}(${n.t}.${n.Y});local ${n.c},${n.x}=(loadstring or load)(${n.r});if not ${n.c} then error("Meson["..tostring(${n.x}).."]");end;return ${n.c}(...);end}):${n.W}()`;
-        
         return output;
-    }
-
-    generateMoreFakeFuncs(n) {
-        const funcs = [];
-        
-        funcs.push(`${n.u}=function(${n.v},${n.h},${n.Q},${n.x})if ${n.x}==${this.formatNum(59)} then ${n.Q}[${this.formatNum(30)}]=(function(${n.r})${n.Q}[${this.formatNum(28)}]=(${n.r});${n.Q}[${this.formatNum(1)}]=${this.formatNum(1)};end);if not ${n.h}[${this.formatNum(15868)}] then ${n.x}=${n.v}:${n.n}(${n.x},${n.h});else ${n.x}=${n.h}[${this.formatNum(15868)}];end;else if ${n.x}~=${this.formatNum(94)} then else(${n.Q})[${this.formatNum(31)}]=select;return ${this.formatNum(59180)},${n.x};end;end;return nil,${n.x};end`);
-        
-        funcs.push(`${n.G}=function(${n.v},${n.h},${n.Q},${n.x})local ${n.r};${n.x}[${this.formatNum(28)}]=nil;${n.Q}=(${this.formatNum(112)});repeat ${n.r},${n.Q}=${n.v}:${n.j}(${n.h},${n.Q},${n.x});if ${n.r}==${this.formatNum(270048)} then break;end;until false;${n.x}[${this.formatNum(29)}]=type;return ${n.Q};end`);
-        
-        funcs.push(`${n.a}2=function(${n.v},${n.v})(${n.v})[${this.formatNum(32)}]={};end`);
-        
-        funcs.push(`${n.V}2=function(${n.v},${n.h},${n.Q},${n.x},${n.r},${n.S},${n.m})${n.Q}=(${this.formatNum(63)});while true do if ${n.Q}==${this.formatNum(63)} then ${n.x}[${this.formatNum(46)}]=(function()local ${n.f},${n.K},${n.O},${n.s},${n.T},${n.R};${n.T},${n.O},${n.R},${n.s}=${n.v}:${n.n}6(${n.s},${n.T},${n.O},${n.x},${n.R});local ${n.M},${n.U};${n.M},${n.U},${n.T},${n.R}=${n.v}:${n.p}6(${n.T},${n.O},${n.x},${n.R},${n.M},${n.s},${n.U});return ${n.K};end);if not(not ${n.r}[${this.formatNum(1587)}])then ${n.Q}=${n.v}:${n.D}2(${n.Q});else ${n.Q}=${this.formatNum(98)};end;else break;end;end;return ${n.x};end`);
-        
-        funcs.push(`${n.d}2=string.sub`);
-        
-        funcs.push(`${n.U}2=function(${n.v},${n.v},${n.h})${n.h}=${n.v}[${this.formatNum(36)}]();return ${n.h};end`);
-        
-        return funcs.join(',');
-    }
-
-    encodeSourceAsTableEntries(chunks, n) {
-        const entries = [];
-        chunks.forEach((chunk, idx) => {
-            const formatted = chunk.map(b => this.formatNum(b)).join(',');
-            entries.push(`{${formatted}}`);
-        });
-        return entries.join(',');
     }
 
     // ==================== HELPER METHODS ====================
@@ -348,94 +239,57 @@ return({${n.w}=function(${n.v},${n.h},${n.Q},${n.x})(${n.Q})[${this.formatNum(10
         return code;
     }
 
-    encryptStrings(code) {
-        this.stringKey = Math.floor(Math.random() * 200) + 50;
-        const funcName = this.getFuncName();
-        const k = this.getSingleLetter();
-        const e = this.getSingleLetter();
-        const r = this.getSingleLetter();
-        const i = this.getSingleLetter();
-        
-        const decoder = `local ${funcName};do local ${k}=${this.formatNum(this.stringKey)};${funcName}=function(${e})local ${r}=""for ${i}=1,#${e} do ${r}=${r}..string.char((bit32 and bit32.bxor or bit and bit.bxor or function(a,b)local p,c=1,0;while a>0 and b>0 do local m,n=a%2,b%2;if m~=n then c=c+p end;a,b,p=(a-m)/2,(b-n)/2,p*2 end;if a<b then a=b end;while a>0 do local m=a%2;if m>0 then c=c+p end;a,p=(a-m)/2,p*2 end;return c end)(${e}[${i}],${k}))end return ${r} end end;`;
+    encryptStringsSimple(code) {
+        const key = Math.floor(Math.random() * 200) + 50;
+        const fn = this.getVar();
+        const k = this.getVar();
+        const t = this.getVar();
+        const r = this.getVar();
+        const i = this.getVar();
 
-        const stringPattern = /(["'])(?:(?!\1)[^\\]|\\.)*\1/g;
-        
-        let result = code.replace(stringPattern, (match) => {
+        const decoder = `local ${fn};do local ${k}=${key};${fn}=function(${t})local ${r}=""for ${i}=1,#${t} do ${r}=${r}..string.char((bit32 and bit32.bxor or bit and bit.bxor or function(a,b)local p,c=1,0 while a>0 and b>0 do local m,n=a%2,b%2 if m~=n then c=c+p end a,b,p=(a-m)/2,(b-n)/2,p*2 end if a<b then a=b end while a>0 do local m=a%2 if m>0 then c=c+p end a,p=(a-m)/2,p*2 end return c end)(${t}[${i}],${k}))end return ${r} end end;`;
+
+        const result = code.replace(/(["'])(?:(?!\1)[^\\]|\\.)*\1/g, (match) => {
             const content = match.slice(1, -1);
             if (content.length < 2 || content.includes('\\')) return match;
-            
-            const encrypted = [];
+            const enc = [];
             for (let j = 0; j < content.length; j++) {
-                encrypted.push(content.charCodeAt(j) ^ this.stringKey);
+                enc.push(content.charCodeAt(j) ^ key);
             }
-            return `${funcName}({${encrypted.map(b => this.formatNum(b)).join(',')}})`;
+            return `${fn}({${enc.map(b => this.fmtNum(b)).join(',')}})`;
         });
 
         return decoder + result;
     }
 
-    encodeNumbers(code) {
-        const numberPattern = /(?<![.\w])(\d+)(?![.\dxXbB])/g;
-        return code.replace(numberPattern, (match, num) => {
-            const n = parseInt(num);
-            if (n < 2 || n > 99999 || Math.random() > 0.5) return match;
-            return this.formatNum(n);
-        });
-    }
-
-    renameVariables(code) {
-        const protectedNames = this.getProtectedNames();
+    renameVars(code) {
+        const reserved = new Set(['and','break','do','else','elseif','end','false','for','function','goto','if','in','local','nil','not','or','repeat','return','then','true','until','while','print','warn','error','assert','type','typeof','pairs','ipairs','next','select','unpack','pcall','xpcall','tonumber','tostring','rawget','rawset','setmetatable','getmetatable','require','loadstring','load','string','table','math','bit32','bit','coroutine','debug','os','io','game','workspace','script','shared','tick','time','wait','delay','spawn','task','getfenv','setfenv','getgenv','getrenv','Instance','Vector2','Vector3','CFrame','Color3','BrickColor','UDim','UDim2','Ray','Region3','TweenInfo','Enum','self','_G','_VERSION','_ENV']);
         const renames = new Map();
 
-        const localPattern = /\blocal\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
         let match;
-        while ((match = localPattern.exec(code)) !== null) {
-            const varName = match[1];
-            if (!protectedNames.has(varName) && !renames.has(varName)) {
-                renames.set(varName, this.getSingleLetter());
+        const pattern = /\blocal\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
+        while ((match = pattern.exec(code)) !== null) {
+            const name = match[1];
+            if (!reserved.has(name) && !renames.has(name)) {
+                renames.set(name, this.getVar());
             }
         }
 
         let result = code;
         renames.forEach((newName, oldName) => {
-            const regex = new RegExp(`\\b${oldName}\\b`, 'g');
-            result = result.replace(regex, newName);
+            result = result.replace(new RegExp(`\\b${oldName}\\b`, 'g'), newName);
         });
-
         return result;
     }
 
-    wrapControlFlow(code) {
-        const s = this.getSingleLetter();
-        const f = this.getSingleLetter();
-        return `local ${s}=1;local ${f}={[1]=function()${code};${s}=0 end};while ${s}>0 do if ${f}[${s}]then ${f}[${s}]()end end;`;
+    wrapCode(code) {
+        const s = this.getVar();
+        const f = this.getVar();
+        return `local ${s}=1;local ${f}={[1]=function()${code};${s}=0 end};while ${s}>0 do if ${f}[${s}]then ${f}[${s}]()end end`;
     }
 
     minify(code) {
-        let result = code.split('\n').map(l => l.trim()).filter(l => l).join(' ');
-        result = result.replace(/\s+/g, ' ');
-        result = result.replace(/\s*([{}()\[\],;])\s*/g, '$1');
-        return result.trim();
-    }
-
-    getProtectedNames() {
-        return new Set([
-            'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for',
-            'function', 'goto', 'if', 'in', 'local', 'nil', 'not', 'or',
-            'repeat', 'return', 'then', 'true', 'until', 'while', 'continue',
-            'print', 'warn', 'error', 'assert', 'type', 'typeof', 'pairs',
-            'ipairs', 'next', 'select', 'unpack', 'pcall', 'xpcall',
-            'tonumber', 'tostring', 'rawget', 'rawset', 'rawequal',
-            'setmetatable', 'getmetatable', 'require', 'loadstring', 'load',
-            'string', 'table', 'math', 'bit32', 'bit', 'coroutine', 'debug',
-            'os', 'io', 'utf8', 'game', 'workspace', 'script', 'shared',
-            'tick', 'time', 'wait', 'delay', 'spawn', 'task',
-            'getfenv', 'setfenv', 'getgenv', 'getrenv', 'getsenv',
-            'Instance', 'Vector2', 'Vector3', 'CFrame', 'Color3', 'BrickColor',
-            'UDim', 'UDim2', 'Ray', 'Region3', 'TweenInfo', 'Enum',
-            'getrawmetatable', 'setrawmetatable', 'hookfunction', 'newcclosure',
-            'Drawing', 'setclipboard', 'self', '_G', '_VERSION', '_ENV'
-        ]);
+        return code.split('\n').map(l => l.trim()).filter(l => l).join(' ').replace(/\s+/g, ' ').replace(/\s*([{}()\[\],;])\s*/g, '$1').trim();
     }
 }
 
