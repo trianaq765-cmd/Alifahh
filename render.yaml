@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: meson-obfuscator
+    env: node
+    region: singapore  # atau region terdekat
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false  # Set manual di Render dashboard
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true  # Auto deploy saat push ke GitHub
