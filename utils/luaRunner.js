@@ -1,6 +1,6 @@
 /**
- * Meson Obfuscator v3.0 - All-in-One VM-Based Obfuscator
- * Complete solution with built-in VM generator
+ * Meson Obfuscator v3.1 - Fixed VM-Based Obfuscator
+ * Roblox Executor Compatible
  */
 
 class MesonObfuscator {
@@ -113,7 +113,7 @@ class MesonObfuscator {
         code = this.removeComments(code);
         code = this.encryptStrings(code);
         code = this.minify(code);
-        return `--[[ Meson Obfuscator v3.0 | meson.dev ]]\n` + code;
+        return `--[[ Meson Obfuscator v3.1 ]]\n` + code;
     }
 
     // ==================== STANDARD TIER ====================
@@ -125,7 +125,7 @@ class MesonObfuscator {
         code = this.renameVariables(code);
         code = this.addDeadCode(code);
         code = this.minify(code);
-        return `--[[ Meson Obfuscator v3.0 | meson.dev ]]\n` + code;
+        return `--[[ Meson Obfuscator v3.1 ]]\n` + code;
     }
 
     // ==================== ADVANCED TIER ====================
@@ -139,154 +139,91 @@ class MesonObfuscator {
         code = this.renameVariables(code);
         code = this.wrapControlFlow(code);
         code = this.minify(code);
-        return `--[[ Meson Obfuscator v3.0 | meson.dev ]]\n` + code;
+        return `--[[ Meson Obfuscator v3.1 ]]\n` + code;
     }
 
-    // ==================== VM TIER ====================
+    // ==================== VM TIER (FIXED FOR ROBLOX) ====================
 
     applyVMObfuscation(sourceCode) {
-        // Step 1: Parse and prepare the code
         const preparedCode = this.removeComments(sourceCode);
-        
-        // Step 2: Generate VM structure
-        const vmCode = this.generateVMStructure(preparedCode);
-        
-        return vmCode;
+        return this.generateVMStructure(preparedCode);
     }
 
     generateVMStructure(sourceCode) {
         // Variable names for VM components
         const v = {
-            main: this.generateName(),
-            strtbl: this.generateName(),
-            decode: this.generateName(),
+            wrapper: this.generateName(),
+            decoder: this.generateName(),
             key: this.generateName(),
-            env: this.generateName(),
-            wrap: this.generateName(),
-            exec: this.generateName(),
-            stack: this.generateName(),
-            inst: this.generateName(),
-            const: this.generateName(),
-            func: this.generateName(),
-            pcall: this.generateName(),
-            err: this.generateName(),
+            data: this.generateName(),
             result: this.generateName(),
-            args: this.generateName(),
-            idx: this.generateName(),
-            val: this.generateName(),
-            tbl: this.generateName(),
-            chr: this.generateName(),
+            chunk: this.generateName(),
+            err: this.generateName(),
+            i: this.generateName(),
+            c: this.generateName(),
             bxor: this.generateName(),
-            sub: this.generateName(),
-            byte: this.generateName(),
-            char: this.generateName(),
-            concat: this.generateName(),
-            select: this.generateName(),
-            unpack: this.generateName(),
-            pack: this.generateName(),
-            type: this.generateName(),
-            next: this.generateName(),
-            pairs: this.generateName(),
-            getfenv: this.generateName(),
-            setfenv: this.generateName(),
-            tonumber: this.generateName(),
-            tostring: this.generateName(),
-            rawget: this.generateName(),
-            rawset: this.generateName(),
-            setmeta: this.generateName(),
-            getmeta: this.generateName(),
-            bit: this.generateName(),
+            strchar: this.generateName(),
+            strbyte: this.generateName(),
+            tblconcat: this.generateName(),
+            loadfn: this.generateName(),
+            output: this.generateName(),
+            temp: this.generateName(),
+            a: this.generateName(),
+            b: this.generateName(),
+            p: this.generateName(),
+            ra: this.generateName(),
+            rb: this.generateName(),
         };
 
         // Encryption key
         const encKey = Math.floor(Math.random() * 200) + 50;
 
-        // Encrypt all strings in the source code
-        const strings = this.extractStrings(sourceCode);
-        const encryptedStrings = strings.map(s => this.encryptStringToArray(s, encKey));
+        // Encrypt the source code
+        const codeBytes = this.encryptStringToArray(sourceCode, encKey);
         
-        // Build string table
-        let stringTableCode = `local ${v.strtbl}={`;
-        encryptedStrings.forEach((enc, i) => {
-            stringTableCode += `[${this.formatNumber(i)}]={${enc.map(b => this.formatNumber(b)).join(',')}},`;
-        });
-        stringTableCode += `};`;
+        // Generate bytecode array string with mixed number formats
+        const bytecodeStr = codeBytes.map(b => this.formatNumber(b)).join(',');
 
-        // Replace strings in source with table lookups
-        let processedCode = sourceCode;
-        strings.forEach((str, i) => {
-            const escaped = str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`(["'])${escaped}\\1`, 'g');
-            processedCode = processedCode.replace(regex, `${v.decode}(${v.strtbl}[${this.formatNumber(i)}])`);
-        });
-
-        // Encrypt the processed code itself
-        const codeBytes = this.encryptStringToArray(processedCode, encKey);
-        
-        // Generate the complete VM output
-        const output = `--[[ Meson Obfuscator v3.0 | VM Protected | meson.dev ]]
+        // Generate the complete VM output - FIXED VERSION without setmetatable on protected tables
+        const output = `--[[ Meson Obfuscator v3.1 | VM Protected ]]
 return(function(...)
 local ${v.key}=${this.formatNumber(encKey)};
-local ${v.byte}=string.byte;
-local ${v.char}=string.char;
-local ${v.sub}=string.sub;
-local ${v.concat}=table.concat;
-local ${v.select}=select;
-local ${v.unpack}=unpack or table.unpack;
-local ${v.pack}=table.pack or function(...)return{n=${v.select}("#",...),}end;
-local ${v.type}=type;
-local ${v.next}=next;
-local ${v.pairs}=pairs;
-local ${v.tonumber}=tonumber;
-local ${v.tostring}=tostring;
-local ${v.getfenv}=getfenv;
-local ${v.setmeta}=setmetatable;
-local ${v.getmeta}=getmetatable;
-local ${v.rawget}=rawget;
-local ${v.rawset}=rawset;
-local ${v.pcall}=pcall;
-local ${v.bit}=bit32 or bit or{bxor=function(${v.args},b)local p,c=1,0;while ${v.args}>0 and b>0 do local ra,rb=${v.args}%2,b%2;if ra~=rb then c=c+p end;${v.args},b,p=(${v.args}-ra)/2,(b-rb)/2,p*2 end;if ${v.args}<b then ${v.args}=b end;while ${v.args}>0 do local ra=${v.args}%2;if ra>0 then c=c+p end;${v.args},p=(${v.args}-ra)/2,p*2 end;return c end};
-local ${v.bxor}=${v.bit}.bxor;
-local ${v.env}=${v.getfenv} and ${v.getfenv}()or _ENV or _G;
-local ${v.decode}=function(${v.tbl})
-local ${v.result}=""
-for ${v.idx}=1,#${v.tbl} do
-${v.result}=${v.result}..${v.char}(${v.bxor}(${v.tbl}[${v.idx}],${v.key}))
-end
-return ${v.result}
+local ${v.strchar}=string.char;
+local ${v.strbyte}=string.byte;
+local ${v.tblconcat}=table.concat;
+local ${v.loadfn}=loadstring or load;
+local ${v.bxor}=bit32 and bit32.bxor or bit and bit.bxor or function(${v.a},${v.b})
+local ${v.p},${v.c}=1,0;
+while ${v.a}>0 and ${v.b}>0 do
+local ${v.ra},${v.rb}=${v.a}%2,${v.b}%2;
+if ${v.ra}~=${v.rb} then ${v.c}=${v.c}+${v.p} end;
+${v.a},${v.b},${v.p}=(${v.a}-${v.ra})/2,(${v.b}-${v.rb})/2,${v.p}*2;
 end;
-${stringTableCode}
-local ${v.inst}={${codeBytes.map(b => this.formatNumber(b)).join(',')}};
-local ${v.func}=${v.decode}(${v.inst});
-local ${v.exec},${v.err}=loadstring(${v.func});
-if not ${v.exec} then
-${v.exec},${v.err}=load(${v.func});
+if ${v.a}<${v.b} then ${v.a}=${v.b} end;
+while ${v.a}>0 do
+local ${v.ra}=${v.a}%2;
+if ${v.ra}>0 then ${v.c}=${v.c}+${v.p} end;
+${v.a},${v.p}=(${v.a}-${v.ra})/2,${v.p}*2;
 end;
-if ${v.exec} then
-${v.setmeta}(${v.env},{__index=_G});
-if ${v.setfenv} then ${v.setfenv}(${v.exec},${v.env})end;
-return ${v.exec}(...);
-else
-error(${v.decode}({${this.encryptStringToArray("Meson VM Error: ", encKey).join(',')}})..${v.tostring}(${v.err}));
+return ${v.c};
 end;
+local ${v.data}={${bytecodeStr}};
+local ${v.decoder}=function(${v.temp})
+local ${v.output}={};
+for ${v.i}=1,#${v.temp} do
+${v.output}[${v.i}]=${v.strchar}(${v.bxor}(${v.temp}[${v.i}],${v.key}));
+end;
+return ${v.tblconcat}(${v.output});
+end;
+local ${v.result}=${v.decoder}(${v.data});
+local ${v.chunk},${v.err}=${v.loadfn}(${v.result});
+if not ${v.chunk} then
+error("Meson: "..(${v.err} or "Unknown error"));
+end;
+return ${v.chunk}(...);
 end)(...)`;
 
-        return this.minify(output);
-    }
-
-    extractStrings(code) {
-        const strings = [];
-        const regex = /(["'])(?:(?!\1)[^\\]|\\.)*\1/g;
-        let match;
-        
-        while ((match = regex.exec(code)) !== null) {
-            const content = match[0].slice(1, -1);
-            if (content.length >= 2 && !content.includes('\\') && !strings.includes(content)) {
-                strings.push(content);
-            }
-        }
-        
-        return strings;
+        return this.minifyVM(output);
     }
 
     encryptStringToArray(str, key) {
@@ -297,12 +234,20 @@ end)(...)`;
         return bytes;
     }
 
+    // Special minify for VM that preserves structure
+    minifyVM(code) {
+        let result = code;
+        // Remove extra whitespace but keep newlines for readability
+        result = result.split('\n').map(line => line.trim()).filter(line => line).join('\n');
+        // Collapse multiple spaces
+        result = result.replace(/  +/g, ' ');
+        return result;
+    }
+
     // ==================== HELPER METHODS ====================
 
     removeComments(code) {
-        // Remove multi-line comments
         code = code.replace(/--\[\[[\s\S]*?\]\]/g, '');
-        // Remove single-line comments
         code = code.replace(/--[^\n]*/g, '');
         return code;
     }
@@ -311,8 +256,17 @@ end)(...)`;
         this.stringKey = Math.floor(Math.random() * 200) + 50;
         const funcName = this.generateName();
         const keyVar = this.generateName();
+        const eVar = this.generateName();
+        const rVar = this.generateName();
+        const iVar = this.generateName();
+        const aVar = this.generateName();
+        const bVar = this.generateName();
+        const pVar = this.generateName();
+        const cVar = this.generateName();
+        const raVar = this.generateName();
+        const rbVar = this.generateName();
         
-        const decoder = `local ${funcName};do local ${keyVar}=${this.formatNumber(this.stringKey)};${funcName}=function(e)local r=""for i=1,#e do r=r..string.char((bit32 and bit32.bxor or function(a,b)local p,c=1,0;while a>0 and b>0 do local ra,rb=a%2,b%2;if ra~=rb then c=c+p end;a,b,p=(a-ra)/2,(b-rb)/2,p*2 end;if a<b then a=b end;while a>0 do local ra=a%2;if ra>0 then c=c+p end;a,p=(a-ra)/2,p*2 end;return c end)(e[i],${keyVar}))end return r end end;`;
+        const decoder = `local ${funcName};do local ${keyVar}=${this.formatNumber(this.stringKey)};${funcName}=function(${eVar})local ${rVar}=""for ${iVar}=1,#${eVar} do ${rVar}=${rVar}..string.char((bit32 and bit32.bxor or bit and bit.bxor or function(${aVar},${bVar})local ${pVar},${cVar}=1,0;while ${aVar}>0 and ${bVar}>0 do local ${raVar},${rbVar}=${aVar}%2,${bVar}%2;if ${raVar}~=${rbVar} then ${cVar}=${cVar}+${pVar} end;${aVar},${bVar},${pVar}=(${aVar}-${raVar})/2,(${bVar}-${rbVar})/2,${pVar}*2 end;if ${aVar}<${bVar} then ${aVar}=${bVar} end;while ${aVar}>0 do local ${raVar}=${aVar}%2;if ${raVar}>0 then ${cVar}=${cVar}+${pVar} end;${aVar},${pVar}=(${aVar}-${raVar})/2,${pVar}*2 end;return ${cVar} end)(${eVar}[${iVar}],${keyVar}))end return ${rVar} end end;`;
 
         const stringPattern = /(["'])(?:(?!\1)[^\\]|\\.)*\1/g;
         
@@ -334,8 +288,14 @@ end)(...)`;
         this.stringKey = Math.floor(Math.random() * 200) + 50;
         const funcName = this.generateName();
         const tableVar = this.generateName();
+        const eVar = this.generateName();
+        const kVar = this.generateName();
+        const rVar = this.generateName();
+        const iVar = this.generateName();
+        const cVar = this.generateName();
+        const xVar = this.generateName();
         
-        const decoder = `local ${funcName};do local ${tableVar}={};for i=0,255 do ${tableVar}[i]=string.char(i)end;${funcName}=function(e,k)local r=""for i=1,#e do local c=e[i]local x=(bit32 and bit32.bxor(c,k)or c)r=r..(${tableVar}[x]or string.char(x))end return r end end;`;
+        const decoder = `local ${funcName};do local ${tableVar}={};for ${iVar}=0,255 do ${tableVar}[${iVar}]=string.char(${iVar})end;${funcName}=function(${eVar},${kVar})local ${rVar}=""for ${iVar}=1,#${eVar} do local ${cVar}=${eVar}[${iVar}]local ${xVar}=(bit32 and bit32.bxor(${cVar},${kVar})or bit and bit.bxor(${cVar},${kVar})or ${cVar})${rVar}=${rVar}..(${tableVar}[${xVar}]or string.char(${xVar}))end return ${rVar} end end;`;
 
         const stringPattern = /(["'])(?:(?!\1)[^\\]|\\.)*\1/g;
         
@@ -462,11 +422,9 @@ end)(...)`;
 
     minify(code) {
         let result = code;
-        // Remove extra whitespace but preserve newlines in strings
         result = result.split('\n').map(line => line.trim()).filter(line => line).join(' ');
         result = result.replace(/\s+/g, ' ');
         result = result.replace(/\s*([{}()\[\],;])\s*/g, '$1');
-        // Ensure spaces around keywords
         result = result.replace(/\b(and|or|not|then|do|end|else|elseif|in|local|function|return|if|while|for|repeat|until)\b/g, ' $1 ');
         result = result.replace(/\s+/g, ' ');
         return result.trim();
