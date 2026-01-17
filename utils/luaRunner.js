@@ -1,6 +1,5 @@
 /**
- * Meson Obfuscator v7.0 - Complete Professional Version
- * All transforms + Anti-Tamper + Anti-Debug
+ * Meson Obfuscator v7.1 - Fixed Identifier & Syntax Errors
  */
 
 // Import transforms
@@ -28,33 +27,25 @@ class MesonObfuscator {
         this.stringKey = Math.floor(Math.random() * 200) + 50;
     }
 
-    // ==================== NAME GENERATION ====================
+    // ==================== NAME GENERATION (FIXED) ====================
 
     generateVarName(style = 'mixed') {
         const styles = {
             single: () => {
-                const chars = 'vhQxrSmfKOUTRBCDEFGHIJLNPWYZabcdegijklnopqstuwyz';
+                // Style: _a, _b
+                const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
                 for (const c of chars) {
-                    if (!this.usedNames.has(c)) {
-                        this.usedNames.add(c);
-                        return c;
+                    const name = '_' + c;
+                    if (!this.usedNames.has(name)) {
+                        this.usedNames.add(name);
+                        return name;
                     }
                 }
                 return '_' + (this.varCounter++);
             },
-            withNum: () => {
-                const base = 'vhQxrSmfKOUTRBCDEFGHIJLNPWYZ';
-                const c = base[Math.floor(Math.random() * base.length)];
-                const n = Math.floor(Math.random() * 10);
-                const name = c + n;
-                if (!this.usedNames.has(name)) {
-                    this.usedNames.add(name);
-                    return name;
-                }
-                return '_' + (this.varCounter++);
-            },
             Il1: () => {
-                let name = '';
+                // Style: _Il1I1
+                let name = '_'; // ALWAYS start with underscore to prevent '1' error
                 for (let i = 0; i < 6; i++) {
                     name += ['I', 'l', '1'][Math.floor(Math.random() * 3)];
                 }
@@ -64,17 +55,26 @@ class MesonObfuscator {
                 }
                 return '_' + (this.varCounter++);
             },
+            O0o: () => {
+                // Style: _O0o0O
+                let name = '_'; // ALWAYS start with underscore
+                for (let i = 0; i < 6; i++) {
+                    name += ['O', 'o', '0'][Math.floor(Math.random() * 3)];
+                }
+                if (!this.usedNames.has(name)) {
+                    this.usedNames.add(name);
+                    return name;
+                }
+                return '_' + (this.varCounter++);
+            },
             mixed: () => {
-                const all = ['single', 'withNum', 'Il1'];
+                // Randomly pick a style
+                const all = ['single', 'Il1', 'O0o'];
                 return styles[all[Math.floor(Math.random() * all.length)]]();
             }
         };
+        
         return styles[style] ? styles[style]() : styles.mixed();
-    }
-
-    // ✅ TAMBAHKAN ALIAS INI - untuk kompatibilitas dengan transforms
-    generateName(style = 'mixed') {
-        return this.generateVarName(style);
     }
 
     formatNumber(num) {
@@ -132,13 +132,10 @@ class MesonObfuscator {
 
     applyBasicObfuscation(code) {
         code = this.removeComments(code);
-        
-        // String Encryption
         const stringEnc = new StringEncrypt(this);
         code = stringEnc.apply(code);
-        
         code = this.minify(code);
-        return '--[[Meson v7.0]]\n' + code;
+        return '--[[Meson v7.1]]\n' + code;
     }
 
     // ==================== STANDARD TIER ====================
@@ -146,23 +143,18 @@ class MesonObfuscator {
     applyStandardObfuscation(code) {
         code = this.removeComments(code);
         
-        // String Encryption
         const stringEnc = new StringEncrypt(this);
         code = stringEnc.apply(code);
         
-        // Number Encoding
         const numEnc = new NumberEncode(this);
         code = numEnc.apply(code);
         
-        // Dead Code
         const deadCode = new DeadCode(this);
         code = deadCode.apply(code);
         
-        // Variable Renaming
         code = this.renameVariables(code);
-        
         code = this.minify(code);
-        return '--[[Meson v7.0]]\n' + code;
+        return '--[[Meson v7.1]]\n' + code;
     }
 
     // ==================== ADVANCED TIER ====================
@@ -170,59 +162,51 @@ class MesonObfuscator {
     applyAdvancedObfuscation(code) {
         code = this.removeComments(code);
         
-        // Anti-Tamper (First layer of protection)
+        // 1. Protection Layers (Top Level)
         const antiTamper = new AntiTamper(this);
         code = antiTamper.apply(code);
         
-        // Anti-Debug
         const antiDebug = new AntiDebug(this);
         code = antiDebug.apply(code);
         
-        // Function Wrapping
+        // 2. Structural Changes
         const funcWrap = new FunctionWrap(this);
         code = funcWrap.apply(code);
         
-        // String Splitting (before encryption)
         const stringSplit = new StringSplit(this);
         code = stringSplit.apply(code);
         
-        // String Encryption
+        // 3. Data Obfuscation
         const stringEnc = new StringEncrypt(this);
         code = stringEnc.apply(code);
         
-        // Number Encoding
         const numEnc = new NumberEncode(this);
         code = numEnc.apply(code);
         
-        // Proxy Functions
+        // 4. Logic Obfuscation
         const proxyFunc = new ProxyFunction(this);
         code = proxyFunc.apply(code);
         
-        // Table Indirection
         const tableInd = new TableIndirect(this);
         code = tableInd.apply(code);
         
-        // Dead Code
         const deadCode = new DeadCode(this);
         code = deadCode.apply(code);
         
-        // Junk Loops
         const junkLoops = new JunkLoops(this);
         code = junkLoops.apply(code);
         
-        // Opaque Predicates
         const opaque = new OpaquePredicates(this);
         code = opaque.apply(code);
         
-        // Control Flow
         const controlFlow = new ControlFlow(this);
         code = controlFlow.apply(code);
         
-        // Variable Renaming (last step)
+        // 5. Final Rename
         code = this.renameVariables(code);
-        
         code = this.minify(code);
-        return '--[[Meson v7.0|Protected]]\n' + code;
+        
+        return '--[[Meson v7.1|Protected]]\n' + code;
     }
 
     // ==================== HELPER METHODS ====================
@@ -237,7 +221,7 @@ class MesonObfuscator {
         const protectedNames = this.getProtectedNames();
         const renames = new Map();
 
-        // Find local variable declarations
+        // Regex lebih aman untuk menangkap variable
         const localPattern = /\blocal\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
         let match;
         while ((match = localPattern.exec(code)) !== null) {
@@ -247,21 +231,20 @@ class MesonObfuscator {
             }
         }
 
-        // Find function parameters
         const funcPattern = /function\s*[^(]*\(([^)]*)\)/g;
         while ((match = funcPattern.exec(code)) !== null) {
             const params = match[1].split(',').map(p => p.trim()).filter(p => p && p !== '...');
             for (const param of params) {
-                if (!protectedNames.has(param) && !renames.has(param)) {
+                if (param && !protectedNames.has(param) && !renames.has(param)) {
                     renames.set(param, this.generateVarName());
                 }
             }
         }
 
-        // Apply renames
         let result = code;
         renames.forEach((newName, oldName) => {
-            const regex = new RegExp('\\b' + oldName + '\\b', 'g');
+            // Gunakan word boundary (\b) agar tidak me-replace substring
+            const regex = new RegExp(`\\b${oldName}\\b`, 'g');
             result = result.replace(regex, newName);
         });
 
@@ -270,11 +253,14 @@ class MesonObfuscator {
 
     minify(code) {
         let result = code;
-        result = result.split('\n').map(line => line.trim()).filter(line => line.length > 0).join(' ');
+        // Hapus empty lines
+        result = result.split('\n').map(l => l.trim()).filter(l => l).join(' ');
+        // Collapse spaces
         result = result.replace(/\s+/g, ' ');
-        result = result.replace(/\s*([{}()\[\],;])\s*/g, '$1');
+        // Hapus spasi di sekitar operator
+        result = result.replace(/\s*([{}()\[\],;=<>+\-*/%^#])\s*/g, '$1');
+        // Pastikan keyword tetap terpisah (contoh: 'end' dan 'local')
         result = result.replace(/\b(and|or|not|then|do|end|else|elseif|in|local|function|return|if|while|for|repeat|until)\b/g, ' $1 ');
-        result = result.replace(/\s+/g, ' ');
         return result.trim();
     }
 
@@ -294,7 +280,7 @@ class MesonObfuscator {
             'Instance', 'Vector2', 'Vector3', 'CFrame', 'Color3', 'BrickColor',
             'UDim', 'UDim2', 'Ray', 'Region3', 'TweenInfo', 'Enum',
             'getrawmetatable', 'setrawmetatable', 'hookfunction', 'newcclosure',
-            'Drawing', 'setclipboard', 'self', '_G', '_VERSION', '_ENV'
+            'Drawing', 'setclipboard', 'self', '_G', '_VERSION', '_ENV', '...'
         ]);
     }
 }
