@@ -21,44 +21,47 @@ class JunkLoops {
      * Generate a junk loop that never executes
      */
     generateJunkLoop() {
+        // Defines array of functions that RETURN strings
         const types = [
             // For loop that never runs (start > end)
             () => {
                 const v = this.generateVarName();
                 const start = Math.floor(Math.random() * 100) + 100;
                 const endVal = Math.floor(Math.random() * 50);
-                return 'for ' + v + '=' + start + ',' + endVal + ' do error("!") end;';
+                return `for ${v}=${start},${endVal} do end;`;
             },
             // While false
             () => {
                 const v = this.generateVarName();
-                return 'while false do local ' + v + '=nil end;';
+                return `while false do local ${v}=nil end;`;
             },
             // Repeat with immediate break
             () => {
                 const v = this.generateVarName();
-                return 'repeat local ' + v + '=0;break until false;';
+                return `repeat local ${v}=0;break until true;`;
             },
             // For loop with 0 iterations
             () => {
                 const v = this.generateVarName();
-                return 'for ' + v + '=1,0 do end;';
+                return `for ${v}=1,0 do end;`;
             },
             // Conditional that never triggers
             () => {
                 const v = this.generateVarName();
                 const a = Math.floor(Math.random() * 100);
-                return 'if ' + a + '>' + (a + 100) + ' then for ' + v + '=1,10 do end end;';
+                return `if ${a}>${a + 100} then for ${v}=1,10 do end end;`;
             },
             // Empty pairs loop on empty table
             () => {
                 const k = this.generateVarName();
                 const v = this.generateVarName();
-                return 'for ' + k + ',' + v + ' in pairs({}) do end;';
-            },
+                return `for ${k},${v} in pairs({}) do end;`;
+            }
         ];
         
-        return types[Math.floor(Math.random() * types.length)]();
+        // Execute one random function from the array
+        const selectedFunc = types[Math.floor(Math.random() * types.length)];
+        return selectedFunc();
     }
 
     /**
@@ -71,13 +74,14 @@ class JunkLoops {
         const b = Math.floor(Math.random() * 1000);
         
         const types = [
-            'local ' + v + '=0;for _=1,0 do ' + v + '=' + v + '+1 end;',
-            'local ' + v + '=' + a + ';local ' + v2 + '=' + b + ';if ' + v + '>' + (a + b) + ' then ' + v + '=' + v2 + ' end;',
-            'local ' + v + '=function()return nil end;if false then ' + v + '()end;',
-            'local ' + v + '={};while #' + v + '>100 do table.insert(' + v + ',1)end;',
+            () => `local ${v}=0;for _=1,0 do ${v}=${v}+1 end;`,
+            () => `local ${v}=${a};local ${v2}=${b};if ${v}>${a + b} then ${v}=${v2} end;`,
+            () => `local ${v}=function()return nil end;if false then ${v}()end;`,
+            () => `local ${v}={};while #${v}>100 do table.insert(${v},1)end;`
         ];
         
-        return types[Math.floor(Math.random() * types.length)]();
+        const selectedFunc = types[Math.floor(Math.random() * types.length)];
+        return selectedFunc();
     }
 
     /**
@@ -101,9 +105,11 @@ class JunkLoops {
         let insertions = 0;
         const maxInsertions = 3;
         
+        // Use a callback function for replacement
         result = result.replace(/\bend\b/g, (match) => {
             if (insertions >= maxInsertions) return match;
-            if (Math.random() > 0.3) return match;
+            // 30% chance to insert junk
+            if (Math.random() > 0.7) return match;
             
             insertions++;
             return match + ';' + this.generateJunkLoop();
