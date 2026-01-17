@@ -72,6 +72,11 @@ class MesonObfuscator {
         return styles[style] ? styles[style]() : styles.mixed();
     }
 
+    // ✅ TAMBAHKAN ALIAS INI - untuk kompatibilitas dengan transforms
+    generateName(style = 'mixed') {
+        return this.generateVarName(style);
+    }
+
     formatNumber(num) {
         if (num < 0) return '(-' + this.formatNumber(-num) + ')';
         const r = Math.random();
