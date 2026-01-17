@@ -1,6 +1,6 @@
 /**
- * Meson Obfuscator v5.1 - WORKING Professional Version
- * Tested & Fixed - No more errors!
+ * Meson Obfuscator v6.0 - Stable & Professional
+ * Based on working v3.1 + improved output formatting
  */
 
 class MesonObfuscator {
@@ -9,260 +9,435 @@ class MesonObfuscator {
     }
 
     reset() {
-        this.counter = 0;
-        this.used = new Set();
-        this.key = Math.floor(Math.random() * 200) + 50;
+        this.varCounter = 0;
+        this.usedNames = new Set();
+        this.stringKey = Math.floor(Math.random() * 200) + 50;
     }
 
-    // Get unique short variable name
-    getVar() {
-        const chars = 'vhQxrSmfKOMUTRBCDEFGHIJLNPWYZabcdegijklnopqstuwyz';
-        for (const c of chars) {
-            if (!this.used.has(c)) {
-                this.used.add(c);
-                return c;
+    // ==================== NAME GENERATION ====================
+    
+    generateVarName(style = 'mixed') {
+        const styles = {
+            single: () => {
+                const chars = 'vhQxrSmfKOUTRBCDEFGHIJLNPWYZabcdegijklnopqstuwyz';
+                for (const c of chars) {
+                    if (!this.usedNames.has(c)) {
+                        this.usedNames.add(c);
+                        return c;
+                    }
+                }
+                return '_' + (this.varCounter++);
+            },
+            withNum: () => {
+                const base = 'vhQxrSmfKOUTRBCDEFGHIJLNPWYZ';
+                const c = base[Math.floor(Math.random() * base.length)];
+                const n = Math.floor(Math.random() * 10);
+                const name = c + n;
+                if (!this.usedNames.has(name)) {
+                    this.usedNames.add(name);
+                    return name;
+                }
+                return '_' + (this.varCounter++);
+            },
+            Il1: () => {
+                let name = '';
+                for (let i = 0; i < 6; i++) {
+                    name += ['I', 'l', '1'][Math.floor(Math.random() * 3)];
+                }
+                if (!this.usedNames.has(name)) {
+                    this.usedNames.add(name);
+                    return name;
+                }
+                return '_' + (this.varCounter++);
+            },
+            O0o: () => {
+                let name = '';
+                for (let i = 0; i < 6; i++) {
+                    name += ['O', 'o', '0'][Math.floor(Math.random() * 3)];
+                }
+                if (!this.usedNames.has(name)) {
+                    this.usedNames.add(name);
+                    return name;
+                }
+                return '_' + (this.varCounter++);
+            },
+            mixed: () => {
+                const all = ['single', 'withNum', 'Il1', 'O0o'];
+                return styles[all[Math.floor(Math.random() * all.length)]]();
             }
-        }
-        this.counter++;
-        return '_' + this.counter;
+        };
+        
+        return styles[style] ? styles[style]() : styles.mixed();
     }
 
-    // Get function-style name (like Luraph: w, e, f, Q2, R6)
-    getFn() {
-        const base = this.getVar();
-        if (Math.random() > 0.5) {
-            return base + Math.floor(Math.random() * 10);
-        }
-        return base;
-    }
-
-    // Format number with variety
-    fmt(n) {
-        if (n < 0) return `(-${this.fmt(-n)})`;
+    // Format number with variety (hex, binary, decimal, underscore)
+    formatNumber(num) {
+        if (num < 0) return '(-' + this.formatNumber(-num) + ')';
+        
         const r = Math.random();
-        if (r < 0.15) return `0x${n.toString(16).toUpperCase()}`;
-        if (r < 0.30) return `0X${n.toString(16)}`;
-        if (r < 0.40 && n < 256) return `0b${n.toString(2)}`;
-        if (r < 0.50 && n < 256) return `0B${n.toString(2)}`;
-        if (r < 0.60 && n > 1000) return n.toString().replace(/\B(?=(\d{2})+(?!\d))/g, '_');
-        return n.toString();
+        if (r < 0.20) return '0x' + num.toString(16).toUpperCase();
+        if (r < 0.35) return '0X' + num.toString(16);
+        if (r < 0.45 && num < 256) return '0b' + num.toString(2);
+        if (r < 0.55 && num < 256) return '0B' + num.toString(2);
+        if (r < 0.65 && num > 1000) {
+            return num.toString().replace(/\B(?=(\d{2})+(?!\d))/g, '_');
+        }
+        return num.toString();
     }
 
-    // Main entry point
-    async obfuscate(source, options = {}) {
-        const start = Date.now();
+    // ==================== MAIN ENTRY ====================
+
+    async obfuscate(sourceCode, options = {}) {
+        const startTime = Date.now();
         this.reset();
 
         try {
             const tier = options.tier || 'basic';
-            let code;
+            let output;
 
             switch (tier) {
                 case 'basic':
-                    code = this.basicTier(source);
+                    output = this.applyBasicObfuscation(sourceCode);
                     break;
                 case 'standard':
-                    code = this.standardTier(source);
+                    output = this.applyStandardObfuscation(sourceCode);
                     break;
                 case 'advanced':
-                    code = this.advancedTier(source);
+                    output = this.applyAdvancedObfuscation(sourceCode);
                     break;
                 case 'vm':
                 case 'ultimate':
-                    code = this.vmTier(source);
+                    output = this.applyVMObfuscation(sourceCode);
                     break;
                 default:
-                    code = this.basicTier(source);
+                    output = this.applyBasicObfuscation(sourceCode);
             }
 
-            return { success: true, code, time: Date.now() - start, tier };
-        } catch (err) {
-            console.error('[Meson Error]', err);
-            return { success: false, code: '', error: err.message, time: Date.now() - start };
+            return {
+                success: true,
+                code: output,
+                time: Date.now() - startTime,
+                tier: tier
+            };
+
+        } catch (error) {
+            console.error('[Obfuscator Error]', error);
+            return {
+                success: false,
+                code: '',
+                error: error.message,
+                time: Date.now() - startTime
+            };
         }
     }
 
-    // ==================== BASIC TIER ====================
-    basicTier(src) {
-        let code = this.stripComments(src);
-        code = this.encStrings(code);
-        return `--[[ Meson v5.1 ]]\n` + this.mini(code);
+    // ==================== TIER IMPLEMENTATIONS ====================
+
+    applyBasicObfuscation(code) {
+        code = this.removeComments(code);
+        code = this.encryptStrings(code);
+        code = this.minify(code);
+        return '--[[Meson v6.0]]\n' + code;
     }
 
-    // ==================== STANDARD TIER ====================
-    standardTier(src) {
-        let code = this.stripComments(src);
-        code = this.encStrings(code);
-        code = this.renameLocals(code);
-        return `--[[ Meson v5.1 ]]\n` + this.mini(code);
+    applyStandardObfuscation(code) {
+        code = this.removeComments(code);
+        code = this.encryptStrings(code);
+        code = this.encodeNumbers(code);
+        code = this.renameVariables(code);
+        code = this.addDeadCode(code);
+        code = this.minify(code);
+        return '--[[Meson v6.0]]\n' + code;
     }
 
-    // ==================== ADVANCED TIER ====================
-    advancedTier(src) {
-        let code = this.stripComments(src);
-        code = this.encStrings(code);
-        code = this.renameLocals(code);
-        code = this.wrapExec(code);
-        return `--[[ Meson v5.1 ]]\n` + this.mini(code);
+    applyAdvancedObfuscation(code) {
+        code = this.removeComments(code);
+        code = this.addDeadCode(code);
+        code = this.encryptStrings(code);
+        code = this.encodeNumbers(code);
+        code = this.addOpaquePredicates(code);
+        code = this.renameVariables(code);
+        code = this.wrapControlFlow(code);
+        code = this.minify(code);
+        return '--[[Meson v6.0]]\n' + code;
     }
 
-    // ==================== VM TIER - PROFESSIONAL ====================
-    vmTier(src) {
+    applyVMObfuscation(sourceCode) {
         this.reset();
-        const code = this.stripComments(src);
+        const code = this.removeComments(sourceCode);
         return this.buildVM(code);
     }
 
-    buildVM(source) {
-        // Generate unique variable names
-        const vars = {};
-        const names = ['main','dec','run','tbl','key','dat','res','err','idx','chr','bxor','sub','byte','char','concat','env','wrap','exec','load','pcall'];
-        names.forEach(n => { vars[n] = this.getFn(); });
-        
-        // More variables for fake functions
-        for (let i = 0; i < 15; i++) {
-            vars['f' + i] = this.getFn();
-        }
-        
-        // Parameter names (single letters like Luraph)
-        const p = { v: 'v', h: 'h', Q: 'Q', x: 'x', r: 'r', s: 's', m: 'm', k: 'k', i: 'i', j: 'j', t: 't', o: 'o', c: 'c', a: 'a', b: 'b' };
-        
+    // ==================== VM BUILDER (TESTED & WORKING) ====================
+
+    buildVM(sourceCode) {
+        // Generate unique short variable names
+        const v = {
+            xor: this.generateVarName('single'),
+            key: this.generateVarName('single'),
+            data: this.generateVarName('single'),
+            decode: this.generateVarName('single'),
+            result: this.generateVarName('single'),
+            chunk: this.generateVarName('single'),
+            err: this.generateVarName('single'),
+            char: this.generateVarName('single'),
+            concat: this.generateVarName('single'),
+            i: this.generateVarName('single'),
+            a: this.generateVarName('single'),
+            b: this.generateVarName('single'),
+            p: this.generateVarName('single'),
+            c: this.generateVarName('single'),
+            m: this.generateVarName('single'),
+            n: this.generateVarName('single'),
+            r: this.generateVarName('single'),
+            t: this.generateVarName('single'),
+        };
+
         // Encryption key
         const key = Math.floor(Math.random() * 200) + 50;
-        
-        // Generate random constant array (like Luraph's e={...})
-        const consts = Array(9).fill(0).map(() => Math.floor(Math.random() * 4294967295));
-        
-        // Encrypt the source code
+
+        // Encrypt source code
         const encrypted = [];
-        for (let i = 0; i < source.length; i++) {
-            encrypted.push(source.charCodeAt(i) ^ key);
+        for (let i = 0; i < sourceCode.length; i++) {
+            encrypted.push(sourceCode.charCodeAt(i) ^ key);
         }
-        
-        // Split into chunks for variety in output
-        const chunkSize = 40 + Math.floor(Math.random() * 20);
-        const chunks = [];
-        for (let i = 0; i < encrypted.length; i += chunkSize) {
-            chunks.push(encrypted.slice(i, i + chunkSize));
-        }
-        
-        // Format each chunk with mixed number formats
-        const formattedChunks = chunks.map((chunk, idx) => {
-            const formatted = chunk.map(b => this.fmt(b)).join(',');
-            return `[${this.fmt(idx + 1)}]={${formatted}}`;
-        });
-        
-        // Build the output
-        return `--[[ Meson Obfuscator v5.1 | https://meson.dev ]]
-return(function(${p.v},${p.h},${p.Q},${p.x})
-local ${vars.env}=getfenv and getfenv()or _ENV or _G;
-local ${vars.pcall}=pcall;
-local ${vars.f0}={${consts.map(c => this.fmt(c)).join(',')}};
-local ${vars.bxor}=bit32 and bit32.bxor or bit and bit.bxor or function(${p.a},${p.b})
-local ${p.c},${p.o}=1,0;
-while ${p.a}>0 and ${p.b}>0 do
-local ${p.m},${p.s}=${p.a}%2,${p.b}%2;
-if ${p.m}~=${p.s} then ${p.o}=${p.o}+${p.c};end;
-${p.a},${p.b},${p.c}=(${p.a}-${p.m})/2,(${p.b}-${p.s})/2,${p.c}*2;
-end;
-if ${p.a}<${p.b} then ${p.a}=${p.b};end;
-while ${p.a}>0 do
-local ${p.m}=${p.a}%2;
-if ${p.m}>0 then ${p.o}=${p.o}+${p.c};end;
-${p.a},${p.c}=(${p.a}-${p.m})/2,${p.c}*2;
-end;
-return ${p.o};
-end;
-local ${vars.chr}=string.char;
-local ${vars.concat}=table.concat;
-local ${vars.f1}=function(${p.v},${p.h},${p.Q},${p.x})(${p.Q})[${this.fmt(10)}]=${p.v}.${vars.f2};if not ${p.x}[${this.fmt(30368)}] then ${p.h}=${p.v}:${vars.f3}(${p.x},${p.h});else ${p.h}=${p.v}:${vars.f4}(${p.x},${p.h});end;return ${p.h};end;
-local ${vars.f2}=function(${p.v},${p.h})${p.h}=${p.v}[${this.fmt(29370)}];return ${p.h};end;
-local ${vars.f3}=function(${p.v},${p.h},${p.Q})${p.h}=(${this.fmt(30)});${p.v}[${this.fmt(33)}]=${p.Q};return ${p.h};end;
-local ${vars.f4}=function(${p.v},${p.h},${p.Q})${p.h}=${this.fmt(-3411915264)}+((${p.v}.${vars.f5}((${p.v}.${vars.f6}(${p.v}.${vars.f0}[${this.fmt(2)}],${p.v}.${vars.f0}[${this.fmt(6)}]))+${p.Q}[${this.fmt(31479)}])+${p.v}.${vars.f0}[${this.fmt(8)}]);${p.Q}[${this.fmt(23813)}]=(${p.h});return ${p.h};end;
-local ${vars.f5}=function(${p.v})${p.h}=${p.v}[${this.fmt(40)}]();return ${p.h};end;
-local ${vars.f6}=function(${p.v},${p.h})${p.h}=${p.v}[${this.fmt(23813)}];return ${p.h};end;
-local ${vars.f7}=function(${p.v},${p.h})local ${p.Q},${p.x}=(${this.fmt(15)});repeat ${p.x},${p.Q}=${p.v}:${vars.f8}(${p.h},${p.Q});if ${p.x}==${this.fmt(49299)} then break;else if ${p.x}==-1 then return-1;end;end;until false;return nil;end;
-local ${vars.f8}=function(${p.v},${p.h})${p.v}=${p.h}[${this.fmt(23)}]();return ${p.v};end;
-local ${vars.f9}=function(${p.v},${p.h},${p.Q},${p.x})local ${p.r};if ${p.x}<=${this.fmt(70)} then if not(${p.x}>${this.fmt(39)})then ${p.x}=${p.v}:${vars.f10}(${p.x},${p.h},${p.Q});else if not(${p.x}<=${this.fmt(67)})then ${p.x}=${p.v}:${vars.f11}(${p.h},${p.Q},${p.x});return ${this.fmt(36571)},${p.x};else(${p.h})[${this.fmt(3)}]=${p.v}.${vars.f12};if not(not ${p.Q}[${this.fmt(7146)}])then ${p.x}=${p.Q}[${this.fmt(7146)}];else ${p.x}=${this.fmt(-3272562488)}+((${p.v}.${vars.f6}(${p.v}.${vars.f0}[${this.fmt(9)}]>=${p.v}.${vars.f0}[${this.fmt(4)}] and ${p.v}.${vars.f0}[${this.fmt(9)}] or ${p.x}))-${p.v}.${vars.f0}[${this.fmt(1)}]<=${p.v}.${vars.f0}[${this.fmt(5)}] and ${p.v}.${vars.f0}[${this.fmt(7)}] or ${p.Q}[${this.fmt(31479)}]);(${p.Q})[${this.fmt(7146)}]=${p.x};end;end;end;return nil,${p.x};end;
-local ${vars.f10}=string.sub;
-local ${vars.f11}=string.byte;
-local ${vars.f12}=string.pack or function()end;
-local ${vars.f13}=bit32 and bit32.rrotate or function(${p.v})return ${p.v};end;
-local ${vars.f14}=function(${p.v})(${p.v})[${this.fmt(32)}]={};end;
-local ${vars.key}=${this.fmt(key)};
-local ${vars.dat}={${formattedChunks.join(',')}};
-local ${vars.dec}=function(${p.t})
-local ${p.r}={};
-local ${p.k}=${vars.key};
-local ${p.i}=1;
-for ${p.j}=1,#${p.t} do
-for ${p.m}=1,#${p.t}[${p.j}] do
-${p.r}[${p.i}]=${vars.chr}(${vars.bxor}(${p.t}[${p.j}][${p.m}],${p.k}));
-${p.i}=${p.i}+1;
-end;
-end;
-return ${vars.concat}(${p.r});
-end;
-local ${vars.res}=${vars.dec}(${vars.dat});
-local ${vars.exec},${vars.err}=(loadstring or load)(${vars.res});
-if not ${vars.exec} then
-error("Meson VM: "..tostring(${vars.err}));
-end;
-local ${vars.wrap}=function(...)return ${vars.exec}(...)end;
-return ${vars.wrap}(...);
+
+        // Format encrypted data with mixed number formats
+        const formattedData = encrypted.map(b => this.formatNumber(b)).join(',');
+
+        // Build the VM code
+        const vmCode = `--[[Meson v6.0|VM Protected]]
+return(function(...)
+local ${v.char}=string.char
+local ${v.concat}=table.concat
+local ${v.xor}=bit32 and bit32.bxor or bit and bit.bxor or function(${v.a},${v.b})
+local ${v.p},${v.c}=1,0
+while ${v.a}>0 and ${v.b}>0 do
+local ${v.m},${v.n}=${v.a}%2,${v.b}%2
+if ${v.m}~=${v.n} then ${v.c}=${v.c}+${v.p} end
+${v.a},${v.b},${v.p}=(${v.a}-${v.m})/2,(${v.b}-${v.n})/2,${v.p}*2
+end
+if ${v.a}<${v.b} then ${v.a}=${v.b} end
+while ${v.a}>0 do
+local ${v.m}=${v.a}%2
+if ${v.m}>0 then ${v.c}=${v.c}+${v.p} end
+${v.a},${v.p}=(${v.a}-${v.m})/2,${v.p}*2
+end
+return ${v.c}
+end
+local ${v.key}=${this.formatNumber(key)}
+local ${v.data}={${formattedData}}
+local ${v.decode}=function()
+local ${v.r}={}
+for ${v.i}=1,#${v.data} do
+${v.r}[${v.i}]=${v.char}(${v.xor}(${v.data}[${v.i}],${v.key}))
+end
+return ${v.concat}(${v.r})
+end
+local ${v.result}=${v.decode}()
+local ${v.chunk},${v.err}=(loadstring or load)(${v.result})
+if not ${v.chunk} then
+error("Meson:"..tostring(${v.err}))
+end
+return ${v.chunk}(...)
 end)(...)`;
+
+        return this.minify(vmCode);
     }
 
-    // ==================== HELPER METHODS ====================
+    // ==================== STRING ENCRYPTION ====================
 
-    stripComments(code) {
+    encryptStrings(code) {
+        const key = Math.floor(Math.random() * 200) + 50;
+        const funcName = this.generateVarName('withNum');
+        const keyVar = this.generateVarName('single');
+        const tblVar = this.generateVarName('single');
+        const resVar = this.generateVarName('single');
+        const iVar = this.generateVarName('single');
+        const aVar = this.generateVarName('single');
+        const bVar = this.generateVarName('single');
+        const pVar = this.generateVarName('single');
+        const cVar = this.generateVarName('single');
+        const mVar = this.generateVarName('single');
+        const nVar = this.generateVarName('single');
+
+        const decoder = `local ${funcName};do local ${keyVar}=${this.formatNumber(key)};${funcName}=function(${tblVar})local ${resVar}=""for ${iVar}=1,#${tblVar} do ${resVar}=${resVar}..string.char((bit32 and bit32.bxor or bit and bit.bxor or function(${aVar},${bVar})local ${pVar},${cVar}=1,0 while ${aVar}>0 and ${bVar}>0 do local ${mVar},${nVar}=${aVar}%2,${bVar}%2 if ${mVar}~=${nVar} then ${cVar}=${cVar}+${pVar} end ${aVar},${bVar},${pVar}=(${aVar}-${mVar})/2,(${bVar}-${nVar})/2,${pVar}*2 end if ${aVar}<${bVar} then ${aVar}=${bVar} end while ${aVar}>0 do local ${mVar}=${aVar}%2 if ${mVar}>0 then ${cVar}=${cVar}+${pVar} end ${aVar},${pVar}=(${aVar}-${mVar})/2,${pVar}*2 end return ${cVar} end)(${tblVar}[${iVar}],${keyVar}))end return ${resVar} end end;`;
+
+        const stringPattern = /(["'])(?:(?!\1)[^\\]|\\.)*\1/g;
+
+        const result = code.replace(stringPattern, (match) => {
+            const content = match.slice(1, -1);
+            if (content.length < 2 || content.includes('\\')) return match;
+
+            const encrypted = [];
+            for (let i = 0; i < content.length; i++) {
+                encrypted.push(content.charCodeAt(i) ^ key);
+            }
+            return funcName + '({' + encrypted.map(b => this.formatNumber(b)).join(',') + '})';
+        });
+
+        return decoder + result;
+    }
+
+    // ==================== NUMBER ENCODING ====================
+
+    encodeNumbers(code) {
+        const numberPattern = /(?<![.\w])(\d+)(?![.\dxXbB])/g;
+
+        return code.replace(numberPattern, (match, num) => {
+            const n = parseInt(num);
+            if (n < 2 || n > 99999 || Math.random() > 0.5) return match;
+
+            const methods = [
+                () => {
+                    const a = Math.floor(Math.random() * 500);
+                    return '(' + this.formatNumber(a) + '+' + this.formatNumber(n - a) + ')';
+                },
+                () => {
+                    const a = n + Math.floor(Math.random() * 500);
+                    return '(' + this.formatNumber(a) + '-' + this.formatNumber(a - n) + ')';
+                },
+                () => this.formatNumber(n)
+            ];
+
+            return methods[Math.floor(Math.random() * methods.length)]();
+        });
+    }
+
+    // ==================== VARIABLE RENAMING ====================
+
+    renameVariables(code) {
+        const protectedNames = this.getProtectedNames();
+        const renames = new Map();
+
+        const localPattern = /\blocal\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
+        let match;
+        while ((match = localPattern.exec(code)) !== null) {
+            const varName = match[1];
+            if (!protectedNames.has(varName) && !renames.has(varName)) {
+                renames.set(varName, this.generateVarName());
+            }
+        }
+
+        const funcPattern = /function\s*[^(]*\(([^)]*)\)/g;
+        while ((match = funcPattern.exec(code)) !== null) {
+            const params = match[1].split(',').map(p => p.trim()).filter(p => p && p !== '...');
+            for (const param of params) {
+                if (!protectedNames.has(param) && !renames.has(param)) {
+                    renames.set(param, this.generateVarName());
+                }
+            }
+        }
+
+        let result = code;
+        renames.forEach((newName, oldName) => {
+            const regex = new RegExp('\\b' + oldName + '\\b', 'g');
+            result = result.replace(regex, newName);
+        });
+
+        return result;
+    }
+
+    // ==================== DEAD CODE ====================
+
+    addDeadCode(code) {
+        const snippets = [];
+        const count = Math.floor(Math.random() * 4) + 2;
+
+        for (let i = 0; i < count; i++) {
+            const v = this.generateVarName();
+            const type = Math.floor(Math.random() * 5);
+
+            switch (type) {
+                case 0:
+                    snippets.push('local ' + v + '=' + this.formatNumber(Math.floor(Math.random() * 10000)) + ';');
+                    break;
+                case 1:
+                    snippets.push('local ' + v + '=function()return nil end;');
+                    break;
+                case 2:
+                    const a = Math.floor(Math.random() * 100) + 100;
+                    snippets.push('if ' + this.formatNumber(a) + '>' + this.formatNumber(a + 50) + ' then local ' + v + '=nil end;');
+                    break;
+                case 3:
+                    snippets.push('local ' + v + '={};');
+                    break;
+                case 4:
+                    snippets.push('local ' + v + '=string.rep("",0);');
+                    break;
+            }
+        }
+
+        return snippets.join('') + code;
+    }
+
+    // ==================== OPAQUE PREDICATES ====================
+
+    addOpaquePredicates(code) {
+        const checkVar = this.generateVarName();
+        const predicates = [
+            '(' + this.formatNumber(Math.floor(Math.random() * 100) + 1) + '*' + this.formatNumber(Math.floor(Math.random() * 100) + 1) + '>=' + this.formatNumber(1) + ')',
+            '(type("")=="string")',
+            '(type({})=="table")',
+            '(#""==' + this.formatNumber(0) + ')'
+        ];
+
+        const pred = predicates[Math.floor(Math.random() * predicates.length)];
+        return 'local ' + checkVar + '=' + pred + ';if not ' + checkVar + ' then return end;' + code;
+    }
+
+    // ==================== CONTROL FLOW ====================
+
+    wrapControlFlow(code) {
+        const stateVar = this.generateVarName();
+        const funcVar = this.generateVarName();
+
+        return 'local ' + stateVar + '=' + this.formatNumber(1) + ';local ' + funcVar + '={[' + this.formatNumber(1) + ']=function()' + code + ';' + stateVar + '=' + this.formatNumber(0) + ' end};while ' + stateVar + '>' + this.formatNumber(0) + ' do if ' + funcVar + '[' + stateVar + '] then ' + funcVar + '[' + stateVar + ']() end end;';
+    }
+
+    // ==================== UTILITIES ====================
+
+    removeComments(code) {
         code = code.replace(/--\[\[[\s\S]*?\]\]/g, '');
         code = code.replace(/--[^\n]*/g, '');
         return code;
     }
 
-    encStrings(code) {
-        const key = Math.floor(Math.random() * 200) + 50;
-        const fn = this.getFn();
-        const k = this.getVar();
-        const t = this.getVar();
-        const r = this.getVar();
-        const i = this.getVar();
-
-        const dec = `local ${fn};do local ${k}=${key};${fn}=function(${t})local ${r}=""for ${i}=1,#${t} do ${r}=${r}..string.char((bit32 and bit32.bxor or bit and bit.bxor or function(a,b)local p,c=1,0 while a>0 and b>0 do local m,n=a%2,b%2 if m~=n then c=c+p end a,b,p=(a-m)/2,(b-n)/2,p*2 end if a<b then a=b end while a>0 do local m=a%2 if m>0 then c=c+p end a,p=(a-m)/2,p*2 end return c end)(${t}[${i}],${k}))end return ${r} end end;`;
-
-        const res = code.replace(/(["'])(?:(?!\1)[^\\]|\\.)*\1/g, (m) => {
-            const c = m.slice(1, -1);
-            if (c.length < 2 || c.includes('\\')) return m;
-            const e = [];
-            for (let j = 0; j < c.length; j++) e.push(c.charCodeAt(j) ^ key);
-            return `${fn}({${e.map(b => this.fmt(b)).join(',')}})`;
-        });
-
-        return dec + res;
+    minify(code) {
+        let result = code;
+        // Remove empty lines
+        result = result.split('\n').map(line => line.trim()).filter(line => line.length > 0).join('\n');
+        // Collapse newlines to space
+        result = result.replace(/\n/g, ' ');
+        // Collapse multiple spaces
+        result = result.replace(/\s+/g, ' ');
+        // Remove spaces around certain operators
+        result = result.replace(/\s*([{}()\[\],;])\s*/g, '$1');
+        // Ensure spaces around keywords
+        result = result.replace(/\b(and|or|not|then|do|end|else|elseif|in|local|function|return|if|while|for|repeat|until)\b/g, ' $1 ');
+        // Clean up multiple spaces
+        result = result.replace(/\s+/g, ' ');
+        return result.trim();
     }
 
-    renameLocals(code) {
-        const reserved = new Set(['and','break','do','else','elseif','end','false','for','function','goto','if','in','local','nil','not','or','repeat','return','then','true','until','while','print','warn','error','assert','type','typeof','pairs','ipairs','next','select','unpack','pcall','xpcall','tonumber','tostring','rawget','rawset','setmetatable','getmetatable','require','loadstring','load','string','table','math','bit32','bit','coroutine','debug','os','io','game','workspace','script','shared','tick','time','wait','delay','spawn','task','getfenv','setfenv','getgenv','getrenv','Instance','Vector2','Vector3','CFrame','Color3','BrickColor','UDim','UDim2','Ray','Region3','TweenInfo','Enum','self','_G','_VERSION','_ENV']);
-        const map = new Map();
-        let m;
-        const p = /\blocal\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
-        while ((m = p.exec(code)) !== null) {
-            if (!reserved.has(m[1]) && !map.has(m[1])) map.set(m[1], this.getVar());
-        }
-        let r = code;
-        map.forEach((n, o) => { r = r.replace(new RegExp(`\\b${o}\\b`, 'g'), n); });
-        return r;
-    }
-
-    wrapExec(code) {
-        const s = this.getVar();
-        const f = this.getVar();
-        return `local ${s}=1;local ${f}={[1]=function()${code};${s}=0 end};while ${s}>0 do if ${f}[${s}]then ${f}[${s}]()end end`;
-    }
-
-    mini(code) {
-        return code.split('\n').map(l => l.trim()).filter(l => l).join(' ').replace(/\s+/g, ' ').replace(/\s*([{}()\[\],;])\s*/g, '$1').trim();
+    getProtectedNames() {
+        return new Set([
+            'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for',
+            'function', 'goto', 'if', 'in', 'local', 'nil', 'not', 'or',
+            'repeat', 'return', 'then', 'true', 'until', 'while', 'continue',
+            'print', 'warn', 'error', 'assert', 'type', 'typeof', 'pairs',
+            'ipairs', 'next', 'select', 'unpack', 'pcall', 'xpcall',
+            'tonumber', 'tostring', 'rawget', 'rawset', 'rawequal',
+            'setmetatable', 'getmetatable', 'require', 'loadstring', 'load',
+            'string', 'table', 'math', 'bit32', 'bit', 'coroutine', 'debug',
+            'os', 'io', 'utf8', 'game', 'workspace', 'script', 'shared',
+            'tick', 'time', 'wait', 'delay', 'spawn', 'task',
+            'getfenv', 'setfenv', 'getgenv', 'getrenv', 'getsenv',
+            'Instance', 'Vector2', 'Vector3', 'CFrame', 'Color3', 'BrickColor',
+            'UDim', 'UDim2', 'Ray', 'Region3', 'TweenInfo', 'Enum',
+            'getrawmetatable', 'setrawmetatable', 'hookfunction', 'newcclosure',
+            'Drawing', 'setclipboard', 'self', '_G', '_VERSION', '_ENV'
+        ]);
     }
 }
 
