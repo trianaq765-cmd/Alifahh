@@ -1,267 +1,175 @@
 /**
- * Meson Obfuscator - Lua Obfuscator
- * Fixed version with proper Lua syntax handling
+ * Meson Obfuscator v2.0 - Advanced Lua Obfuscator
+ * Supports: String Encryption, Number Encoding, Control Flow, Dead Code, Opaque Predicates
  */
 
-class LuaObfuscator {
+const StringEncrypt = require('./transforms/stringEncrypt');
+const NumberEncode = require('./transforms/numberEncode');
+const ControlFlow = require('./transforms/controlFlow');
+const DeadCode = require('./transforms/deadCode');
+const OpaquePredicates = require('./transforms/opaquePredicates');
+
+class MesonObfuscator {
     constructor() {
+        this.reset();
+    }
+
+    reset() {
         this.varCounter = 0;
-        this.stringKey = 0;
+        this.funcCounter = 0;
+        this.labelCounter = 0;
+        this.usedNames = new Set();
     }
 
     /**
-     * Generate random variable name
+     * Generate unique obfuscated name
      */
-    generateVarName() {
-        const prefixes = ['_', 'l', 'I', 'O', 'v', 'x'];
-        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let name = prefixes[Math.floor(Math.random() * prefixes.length)];
-        
-        for (let i = 0; i < 6; i++) {
-            name += chars[Math.floor(Math.random() * chars.length)];
-        }
-        
-        this.varCounter++;
-        return name + this.varCounter;
-    }
-
-    /**
-     * Encode string to byte array for Lua
-     */
-    encodeString(str, key) {
-        const bytes = [];
-        for (let i = 0; i < str.length; i++) {
-            // XOR each character with key
-            bytes.push(str.charCodeAt(i) ^ key);
-        }
-        return bytes;
-    }
-
-    /**
-     * Generate the decoder function for Lua
-     */
-    generateDecoder(key) {
-        const funcName = this.generateVarName();
-        // Use bit library for Roblox Lua (bit32 atau bit.bxor)
-        const decoder = `local ${funcName}=(function(k) return function(e) local r="" for i=1,#e do r=r..string.char(bit32 and bit32.bxor(e[i],k) or e[i]) end return r end end)(${key})`;
-        return { name: funcName, code: decoder };
-    }
-
-    /**
-     * Check if string should be encrypted
-     */
-    shouldEncryptString(str) {
-        // Skip short strings, empty strings, or special patterns
-        if (str.length < 4) return false;
-        if (str.includes('\\')) return false;  // Has escape sequences
-        if (/^[%w%s%p]+$/.test(str)) return false;  // Lua patterns
-        return true;
-    }
-
-    /**
-     * Collect all strings from code
-     */
-    collectStrings(code) {
-        const strings = [];
-        const regex = /(["'])(?:(?!\1)[^\\]|\\.)*\1/g;
-        let match;
-        
-        while ((match = regex.exec(code)) !== null) {
-            const fullMatch = match[0];
-            const quote = fullMatch[0];
-            const content = fullMatch.slice(1, -1);
-            
-            if (this.shouldEncryptString(content)) {
-                strings.push({
-                    original: fullMatch,
-                    content: content,
-                    quote: quote,
-                    index: match.index
-                });
-            }
-        }
-        
-        return strings;
-    }
-
-    /**
-     * Encrypt strings in the code
-     */
-    encryptStrings(code, decoderName, key) {
-        const strings = this.collectStrings(code);
-        let result = code;
-        let offset = 0;
-        
-        for (const str of strings) {
-            const encoded = this.encodeString(str.content, key);
-            const replacement = `${decoderName}({${encoded.join(",")}})`;
-            
-            const before = result.substring(0, str.index + offset);
-            const after = result.substring(str.index + offset + str.original.length);
-            
-            result = before + replacement + after;
-            offset += replacement.length - str.original.length;
-        }
-        
-        return result;
-    }
-
-    /**
-     * Rename local variables safely
-     */
-    renameVariables(code) {
-        const renames = new Map();
-        const luaKeywords = [
-            'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for',
-            'function', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat',
-            'return', 'then', 'true', 'until', 'while', 'continue'
-        ];
-        const globals = [
-            'game', 'workspace', 'script', 'print', 'warn', 'error', 'pcall',
-            'xpcall', 'require', 'loadstring', 'getfenv', 'setfenv', 'getgenv',
-            'getrenv', 'getrawmetatable', 'setrawmetatable', 'hookfunction',
-            'newcclosure', 'task', 'wait', 'spawn', 'delay', 'tick', 'time',
-            'typeof', 'type', 'pairs', 'ipairs', 'next', 'select', 'unpack',
-            'tostring', 'tonumber', 'string', 'table', 'math', 'bit32', 'bit',
-            'coroutine', 'debug', 'os', 'utf8', 'self', '_G', '_VERSION',
-            'rawget', 'rawset', 'rawequal', 'assert', 'collectgarbage',
-            'Vector3', 'Vector2', 'CFrame', 'Color3', 'BrickColor', 'UDim2',
-            'UDim', 'Enum', 'Instance', 'Ray', 'Region3', 'TweenInfo'
-        ];
-        const skipList = [...luaKeywords, ...globals];
-        
-        // Find all local variable declarations
-        const localPattern = /\blocal\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
-        let match;
-        
-        while ((match = localPattern.exec(code)) !== null) {
-            const varName = match[1];
-            if (!skipList.includes(varName) && !renames.has(varName)) {
-                renames.set(varName, this.generateVarName());
-            }
-        }
-        
-        // Find function parameter names
-        const funcPattern = /function\s*[a-zA-Z0-9_.:]*\s*\(([^)]*)\)/g;
-        while ((match = funcPattern.exec(code)) !== null) {
-            const params = match[1].split(',').map(p => p.trim()).filter(p => p);
-            for (const param of params) {
-                const cleanParam = param.replace(/\.\.\./g, '').trim();
-                if (cleanParam && !skipList.includes(cleanParam) && !renames.has(cleanParam)) {
-                    renames.set(cleanParam, this.generateVarName());
+    generateName(prefix = '_') {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const styles = [
+            // Style 1: _0x format
+            () => '_0x' + Math.random().toString(16).substr(2, 6),
+            // Style 2: Il1 confusion
+            () => {
+                let name = '';
+                for (let i = 0; i < 8; i++) {
+                    name += ['I', 'l', '1'][Math.floor(Math.random() * 3)];
                 }
+                return name;
+            },
+            // Style 3: Unicode-like
+            () => '_' + 'v' + (this.varCounter++) + '_' + Math.random().toString(36).substr(2, 4),
+            // Style 4: OoO0 confusion  
+            () => {
+                let name = '';
+                for (let i = 0; i < 8; i++) {
+                    name += ['O', 'o', '0'][Math.floor(Math.random() * 3)];
+                }
+                return '_' + name;
+            }
+        ];
+
+        let name;
+        do {
+            const style = styles[Math.floor(Math.random() * styles.length)];
+            name = style();
+        } while (this.usedNames.has(name));
+
+        this.usedNames.add(name);
+        return name;
+    }
+
+    /**
+     * Lua keywords and globals to never rename
+     */
+    getProtectedNames() {
+        return new Set([
+            // Lua keywords
+            'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for',
+            'function', 'goto', 'if', 'in', 'local', 'nil', 'not', 'or',
+            'repeat', 'return', 'then', 'true', 'until', 'while', 'continue',
+            
+            // Lua globals
+            'print', 'warn', 'error', 'assert', 'type', 'typeof', 'pairs',
+            'ipairs', 'next', 'select', 'unpack', 'pack', 'pcall', 'xpcall',
+            'tonumber', 'tostring', 'rawget', 'rawset', 'rawequal', 'rawlen',
+            'setmetatable', 'getmetatable', 'require', 'loadstring', 'load',
+            'dofile', 'loadfile', 'collectgarbage', 'newproxy',
+            
+            // Lua libraries
+            'string', 'table', 'math', 'bit32', 'bit', 'coroutine', 'debug',
+            'os', 'io', 'utf8', 'package',
+            
+            // Roblox globals
+            'game', 'workspace', 'script', 'plugin', 'shared', 'tick', 'time',
+            'wait', 'Wait', 'delay', 'Delay', 'spawn', 'Spawn', 'task',
+            'getfenv', 'setfenv', 'gcinfo', 'elapsedTime', 'settings',
+            'stats', 'printidentity', 'version', 'UserSettings',
+            
+            // Roblox services (common)
+            'Instance', 'Vector2', 'Vector3', 'CFrame', 'Color3', 'BrickColor',
+            'UDim', 'UDim2', 'Ray', 'Region3', 'Rect', 'TweenInfo', 'Enum',
+            'NumberRange', 'NumberSequence', 'ColorSequence', 'PhysicalProperties',
+            'Faces', 'Axes', 'Random', 'DateTime', 'PathWaypoint', 'DockWidgetPluginGuiInfo',
+            
+            // Exploit globals
+            'getgenv', 'getrenv', 'getsenv', 'getrawmetatable', 'setrawmetatable',
+            'hookfunction', 'hookmetamethod', 'newcclosure', 'checkcaller',
+            'getcallingscript', 'islclosure', 'iscclosure', 'getinfo', 'debug',
+            'Drawing', 'cleardrawcache', 'isreadonly', 'setreadonly',
+            'getnamecallmethod', 'setnamecallmethod', 'getconnections',
+            'firesignal', 'fireclickdetector', 'fireproximityprompt',
+            'setclipboard', 'setfflag', 'getfflag', 'syn', 'fluxus',
+            
+            // Common self reference
+            'self', '_G', '_VERSION', '_ENV'
+        ]);
+    }
+
+    /**
+     * Extract and protect strings that shouldn't be encrypted
+     */
+    extractProtectedStrings(code) {
+        const protected = [];
+        // URLs, service names, etc.
+        const patterns = [
+            /https?:\/\/[^\s"']+/g,
+            /GetService\s*\(\s*["']([^"']+)["']\s*\)/g,
+            /FindFirstChild\s*\(\s*["']([^"']+)["']\s*\)/g,
+        ];
+        
+        for (const pattern of patterns) {
+            let match;
+            while ((match = pattern.exec(code)) !== null) {
+                protected.push(match[0]);
             }
         }
         
-        // Apply renames (careful not to rename partial matches)
-        let result = code;
-        renames.forEach((newName, oldName) => {
-            // Use word boundary to avoid partial replacements
-            const regex = new RegExp(`\\b${oldName}\\b`, 'g');
-            result = result.replace(regex, newName);
-        });
-        
-        return result;
+        return protected;
     }
 
     /**
-     * Add junk/dead code
-     */
-    addJunkCode() {
-        const junks = [];
-        const junkCount = Math.floor(Math.random() * 3) + 2;
-        
-        for (let i = 0; i < junkCount; i++) {
-            const v = this.generateVarName();
-            const val = Math.floor(Math.random() * 10000);
-            junks.push(`local ${v}=${val}`);
-        }
-        
-        return junks.join(';') + ';';
-    }
-
-    /**
-     * Safe minification that preserves Lua syntax
-     */
-    safeMinify(code) {
-        let result = code;
-        
-        // Remove block comments --[[ ]]
-        result = result.replace(/--\[\[[\s\S]*?\]\]/g, '');
-        
-        // Remove single line comments (but not inside strings)
-        // Simple approach: only remove comments at start of line or after whitespace
-        result = result.replace(/(\s)--[^\n]*/g, '$1');
-        result = result.replace(/^--[^\n]*/gm, '');
-        
-        // Remove multiple empty lines
-        result = result.replace(/\n\s*\n\s*\n/g, '\n\n');
-        
-        // Trim each line
-        result = result.split('\n').map(line => line.trim()).join('\n');
-        
-        // Remove empty lines
-        result = result.split('\n').filter(line => line.length > 0).join('\n');
-        
-        // Collapse into single line with semicolons as separators
-        result = result.replace(/\n/g, ' ');
-        
-        // Collapse multiple spaces into one
-        result = result.replace(/\s+/g, ' ');
-        
-        // Remove spaces around specific operators (carefully)
-        result = result.replace(/\s*([{}(),\[\];])\s*/g, '$1');
-        
-        // But preserve spaces around = (because of ==, ~=, >=, <=)
-        // And preserve spaces after keywords
-        
-        return result.trim();
-    }
-
-    /**
-     * Main obfuscation function
+     * Main obfuscation pipeline
      */
     async obfuscate(sourceCode, options = {}) {
         const startTime = Date.now();
-        
+        this.reset();
+
         try {
-            // Reset state
-            this.varCounter = 0;
-            this.stringKey = Math.floor(Math.random() * 200) + 50;  // Random key 50-250
-            
-            let output = sourceCode;
             const tier = options.tier || 'basic';
-            
-            // Step 1: Add decoder and encrypt strings (all tiers)
-            const decoder = this.generateDecoder(this.stringKey);
-            output = this.encryptStrings(output, decoder.name, this.stringKey);
-            output = decoder.code + '\n' + output;
-            
-            // Step 2: Rename variables (standard and advanced)
-            if (tier === 'standard' || tier === 'advanced') {
-                output = this.renameVariables(output);
+            let code = sourceCode;
+
+            // Preprocessing - remove comments
+            code = this.removeComments(code);
+
+            // Tier-based obfuscation
+            switch (tier) {
+                case 'basic':
+                    code = this.applyBasicObfuscation(code);
+                    break;
+                case 'standard':
+                    code = this.applyStandardObfuscation(code);
+                    break;
+                case 'advanced':
+                    code = this.applyAdvancedObfuscation(code);
+                    break;
             }
-            
-            // Step 3: Add junk code (advanced only)
-            if (tier === 'advanced') {
-                output = this.addJunkCode() + '\n' + output;
-            }
-            
-            // Step 4: Minify (optional, but safe)
-            output = this.safeMinify(output);
-            
-            // Validate output isn't empty
-            if (!output || output.length < 10) {
-                throw new Error('Obfuscation produced empty output');
-            }
-            
+
+            // Final minification
+            code = this.minify(code);
+
+            // Add watermark (optional)
+            code = this.addWatermark(code);
+
             return {
                 success: true,
-                code: output,
-                time: Date.now() - startTime
+                code: code,
+                time: Date.now() - startTime,
+                tier: tier
             };
-            
+
         } catch (error) {
+            console.error('[Obfuscator Error]', error);
             return {
                 success: false,
                 code: '',
@@ -270,6 +178,151 @@ class LuaObfuscator {
             };
         }
     }
+
+    /**
+     * Remove comments from code
+     */
+    removeComments(code) {
+        // Remove multi-line comments --[[ ]]
+        code = code.replace(/--\[\[[\s\S]*?\]\]/g, '');
+        // Remove single-line comments
+        code = code.replace(/--[^\n]*/g, '');
+        return code;
+    }
+
+    /**
+     * Basic tier: String encryption only
+     */
+    applyBasicObfuscation(code) {
+        const stringEncrypt = new StringEncrypt(this);
+        return stringEncrypt.apply(code);
+    }
+
+    /**
+     * Standard tier: String + Variables + Numbers
+     */
+    applyStandardObfuscation(code) {
+        let result = code;
+
+        // 1. String Encryption
+        const stringEncrypt = new StringEncrypt(this);
+        result = stringEncrypt.apply(result);
+
+        // 2. Number Encoding
+        const numberEncode = new NumberEncode(this);
+        result = numberEncode.apply(result);
+
+        // 3. Variable Renaming
+        result = this.renameVariables(result);
+
+        return result;
+    }
+
+    /**
+     * Advanced tier: All features
+     */
+    applyAdvancedObfuscation(code) {
+        let result = code;
+
+        // 1. Dead Code Injection (before other transforms)
+        const deadCode = new DeadCode(this);
+        result = deadCode.apply(result);
+
+        // 2. String Encryption (multi-layer)
+        const stringEncrypt = new StringEncrypt(this);
+        result = stringEncrypt.applyAdvanced(result);
+
+        // 3. Number Encoding
+        const numberEncode = new NumberEncode(this);
+        result = numberEncode.apply(result);
+
+        // 4. Opaque Predicates
+        const opaque = new OpaquePredicates(this);
+        result = opaque.apply(result);
+
+        // 5. Variable Renaming
+        result = this.renameVariables(result);
+
+        // 6. Control Flow Flattening (on functions)
+        const controlFlow = new ControlFlow(this);
+        result = controlFlow.apply(result);
+
+        return result;
+    }
+
+    /**
+     * Rename local variables
+     */
+    renameVariables(code) {
+        const protectedNames = this.getProtectedNames();
+        const renames = new Map();
+
+        // Find local variable declarations
+        const localPattern = /\blocal\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
+        let match;
+
+        while ((match = localPattern.exec(code)) !== null) {
+            const varName = match[1];
+            if (!protectedNames.has(varName) && !renames.has(varName)) {
+                renames.set(varName, this.generateName());
+            }
+        }
+
+        // Find function parameters
+        const funcPattern = /function\s*[^(]*\(([^)]*)\)/g;
+        while ((match = funcPattern.exec(code)) !== null) {
+            const params = match[1].split(',').map(p => p.trim()).filter(p => p && p !== '...');
+            for (const param of params) {
+                if (!protectedNames.has(param) && !renames.has(param)) {
+                    renames.set(param, this.generateName());
+                }
+            }
+        }
+
+        // Apply renames using word boundaries
+        let result = code;
+        renames.forEach((newName, oldName) => {
+            const regex = new RegExp(`\\b${oldName}\\b`, 'g');
+            result = result.replace(regex, newName);
+        });
+
+        return result;
+    }
+
+    /**
+     * Safe minification
+     */
+    minify(code) {
+        let result = code;
+
+        // Remove empty lines
+        result = result.split('\n').filter(line => line.trim()).join('\n');
+
+        // Collapse to single line
+        result = result.replace(/\n/g, ' ');
+
+        // Collapse multiple spaces
+        result = result.replace(/\s+/g, ' ');
+
+        // Remove spaces around operators (carefully)
+        result = result.replace(/\s*([{}()\[\],;])\s*/g, '$1');
+
+        // But keep spaces around keywords and operators that need them
+        result = result.replace(/\b(and|or|not|then|do|end|else|elseif|in|local|function|return|if|while|for|repeat|until)\b/g, ' $1 ');
+
+        // Clean up extra spaces
+        result = result.replace(/\s+/g, ' ').trim();
+
+        return result;
+    }
+
+    /**
+     * Add watermark
+     */
+    addWatermark(code) {
+        const watermark = `--[[ Obfuscated by Meson | t.me/mesonobf ]]`;
+        return watermark + '\n' + code;
+    }
 }
 
-module.exports = new LuaObfuscator();
+module.exports = new MesonObfuscator();
