@@ -2,7 +2,6 @@ const {
     SlashCommandBuilder, 
     AttachmentBuilder 
 } = require('discord.js');
-const path = require('path');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -21,9 +20,10 @@ module.exports = {
                 .setDescription('Obfuscation tier')
                 .setRequired(false)
                 .addChoices(
-                    { name: '🟢 Basic', value: 'basic' },
-                    { name: '🟡 Standard', value: 'standard' },
-                    { name: '🔴 Advanced', value: 'advanced' }
+                    { name: '🟢 Basic - String Encryption', value: 'basic' },
+                    { name: '🟡 Standard - Strings + Variables + Numbers', value: 'standard' },
+                    { name: '🔴 Advanced - All Features', value: 'advanced' },
+                    { name: '💎 VM/Ultimate - Virtual Machine Protection', value: 'vm' }
                 )),
 
     async execute(interaction) {
@@ -55,21 +55,28 @@ module.exports = {
                 luaCode = codeSnippet;
             }
 
-            // Memanggil luaRunner.js dari folder utils
             const LuaObfuscator = require('../utils/luaRunner');
             const result = await LuaObfuscator.obfuscate(luaCode, { tier });
 
             if (result.success) {
+                const tierNames = {
+                    basic: '🟢 Basic',
+                    standard: '🟡 Standard',
+                    advanced: '🔴 Advanced',
+                    vm: '💎 VM/Ultimate'
+                };
+
                 const stats = [
                     `📁 **File:** \`${fileName}\``,
                     `📊 **Size:** ${luaCode.length} → ${result.code.length} chars`,
+                    `📈 **Ratio:** ${((result.code.length / luaCode.length) * 100).toFixed(1)}%`,
                     `⏱️ **Time:** ${result.time}ms`,
-                    `🎚️ **Tier:** ${tier.toUpperCase()}`,
+                    `🎚️ **Tier:** ${tierNames[tier] || tier}`,
                 ].join('\n');
 
                 if (result.code.length < 1900) {
                     return interaction.editReply({
-                        content: `✅ **Obfuscation Complete!**\n${stats}\n\n\`\`\`lua\n${result.code}\n\`\`\``
+                        content: `✅ **Obfuscation Complete!**\n${stats}\n\n\`\`\`lua\n${result.code.substring(0, 1800)}\n\`\`\``
                     });
                 }
 
